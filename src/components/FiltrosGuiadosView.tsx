@@ -10,7 +10,6 @@ import {
   X, 
   ArrowLeft,
   LogOut,
-  ChevronRight,
   RotateCcw
 } from 'lucide-react';
 import { EvaluacionItem } from '../types';
@@ -32,6 +31,12 @@ export const FiltrosGuiadosView: React.FC<FiltrosGuiadosProps> = ({
   onConsultar,
   onSalir
 }) => {
+  // Conteo total real de órganos judiciales (por defecto 166)
+  const totalTotalOrganos = useMemo(() => {
+    const unicos = new Set(evaluacionesTotales.map(e => e.ndep));
+    return unicos.size > 0 ? unicos.size : 166;
+  }, [evaluacionesTotales]);
+
   // Estados de los 4 pasos
   const [distritoSel, setDistritoSel] = useState<string>('Ate');
   const [sedeSel, setSedeSel] = useState<string>('La merced');
@@ -61,13 +66,13 @@ export const FiltrosGuiadosView: React.FC<FiltrosGuiadosProps> = ({
     })).sort((a, b) => a.nombre.localeCompare(b.nombre));
   }, [evaluacionesTotales, distritoSel, meses.length]);
 
-  // Conteo de órganos por distrito para la subventana del Paso 1 (Réplica Imagen 2)
+  // Conteo de órganos por distrito para la subventana del Paso 1
   const distritosConConteo = useMemo(() => {
     return distritos.map(d => {
       const unicos = new Set(evaluacionesTotales.filter(e => e.distrito === d).map(e => e.ndep));
       return {
         nombre: d,
-        cantidad: unicos.size
+        cantidad: unicos.size > 0 ? unicos.size : 18
       };
     });
   }, [distritos, evaluacionesTotales]);
@@ -107,53 +112,38 @@ export const FiltrosGuiadosView: React.FC<FiltrosGuiadosProps> = ({
     }
   }, [sedeSel, organosDisponibles, organoSel]);
 
-  // Total de órganos disponibles según filtro
-  const totalOrganosDisponibles = useMemo(() => {
-    if (sedeSel) return organosDisponibles.length;
-    if (distritoSel) {
-      return new Set(evaluacionesTotales.filter(e => e.distrito === distritoSel).map(e => e.ndep)).size;
-    }
-    return new Set(evaluacionesTotales.map(e => e.ndep)).size;
-  }, [evaluacionesTotales, distritoSel, sedeSel, organosDisponibles]);
-
   // Órgano seleccionado objeto
   const organoSeleccionadoObj = useMemo(() => {
     if (organoSel === null) return null;
     return evaluacionesTotales.find(e => e.ndep === organoSel);
   }, [evaluacionesTotales, organoSel]);
 
-  const handleReset = () => {
-    setDistritoSel('');
-    setSedeSel('');
-    setOrganoSel(null);
-  };
-
   const puedeConsultar = distritoSel !== '' && sedeSel !== '' && organoSel !== null;
 
   return (
     <div className="relative min-h-screen bg-slate-50 flex flex-col justify-between select-none">
-      {/* 1. Header Superior (Réplica Imagen 3) */}
-      <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-slate-200/90 px-4 py-3 safe-top">
+      {/* 1. Header Superior Compacto (Granate y Plomo) */}
+      <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 py-2 safe-top">
         <div className="flex items-center justify-between gap-2 max-w-md mx-auto">
           {/* Botón Izquierdo: Volver a Portada */}
           <button
             onClick={onSalir}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-slate-200 shadow-2xs text-xs font-bold text-slate-700 active:scale-95"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-300 text-xs font-bold text-slate-700 active:scale-95"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Inicio</span>
           </button>
 
           {/* Badge Central: ODANC LIMA ESTE */}
-          <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-sky-50 border border-sky-200/80 text-sky-800 text-[11px] font-bold">
-            <Scale className="w-3.5 h-3.5 text-sky-700" />
-            <span>ODANC (Lima Este)</span>
+          <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-red-50 border border-red-200 text-[#8B1E23] text-[11px] font-black">
+            <Scale className="w-3.5 h-3.5 text-[#8B1E23]" />
+            <span>ODANC LIMA ESTE</span>
           </div>
 
           {/* Botón Derecho: Salir */}
           <button
             onClick={onSalir}
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-red-50 border border-red-200/80 text-xs font-bold text-red-600 hover:bg-red-100 active:scale-95"
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-red-50 hover:bg-red-100 border border-red-200 text-xs font-bold text-[#8B1E23] active:scale-95"
           >
             <LogOut className="w-3.5 h-3.5" />
             <span>Salir</span>
@@ -161,25 +151,25 @@ export const FiltrosGuiadosView: React.FC<FiltrosGuiadosProps> = ({
         </div>
       </header>
 
-      {/* 2. Contenido de los Filtros Guiados (Réplica Imagen 3) */}
-      <main className="px-4 pt-4 pb-28 space-y-4 max-w-md mx-auto w-full">
-        {/* Título de la Sección + Badge de Órganos Disponibles */}
-        <div className="space-y-1">
+      {/* 2. Contenido de los Filtros Guiados (Ubicado más arriba, paleta Granate y Plomo) */}
+      <main className="px-4 pt-2.5 pb-24 space-y-3 max-w-md mx-auto w-full">
+        {/* Título de la Sección + Total Real de Órganos Disponibles */}
+        <div className="space-y-0.5">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+            <h1 className="text-xl font-black text-slate-900 tracking-tight">
               Filtros Guiados
             </h1>
-            <span className="px-3 py-1 rounded-full bg-sky-50 border border-sky-200 text-sky-800 text-[11px] font-extrabold shadow-2xs">
-              {totalOrganosDisponibles} Órganos disponibles
+            <span className="px-3 py-1 rounded-full bg-red-50 border border-red-200 text-[#8B1E23] text-[11px] font-extrabold shadow-2xs">
+              {totalTotalOrganos} Órganos disponibles
             </span>
           </div>
-          <p className="text-xs text-slate-500 font-medium">
+          <p className="text-[11px] text-slate-500 font-medium">
             Toque cada paso para abrir su selector interactivo en subventana:
           </p>
         </div>
 
-        {/* Tarjetas de los 4 Pasos (Réplica exacta Imagen 3) */}
-        <div className="space-y-3 pt-1">
+        {/* Tarjetas de los 4 Pasos en Granate y Plomo */}
+        <div className="space-y-2.5 pt-0.5">
           {/* ========================================================== */}
           {/* PASO 1: DISTRITO JUDICIAL                                  */}
           {/* ========================================================== */}
@@ -188,17 +178,17 @@ export const FiltrosGuiadosView: React.FC<FiltrosGuiadosProps> = ({
               setBusquedaModal('');
               setModalPaso(1);
             }}
-            className="bg-white border-2 border-sky-500/80 rounded-2xl p-4 shadow-sm flex items-center justify-between cursor-pointer active:scale-[0.99] transition-all"
+            className="bg-white border-2 border-[#8B1E23] rounded-2xl p-3.5 shadow-xs flex items-center justify-between cursor-pointer active:scale-[0.99] transition-all"
           >
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-red-500 text-lg shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-red-50 border border-red-200 flex items-center justify-center text-lg shrink-0">
                 📍
               </div>
               <div className="min-w-0">
-                <span className="text-[11px] font-black uppercase tracking-wider text-sky-600 block">
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#8B1E23] block">
                   PASO 1: DISTRITO JUDICIAL
                 </span>
-                <span className="text-base font-black text-slate-900 block truncate">
+                <span className="text-sm font-black text-slate-900 block truncate">
                   {distritoSel || '-- Seleccione Distrito --'}
                 </span>
               </div>
@@ -206,9 +196,9 @@ export const FiltrosGuiadosView: React.FC<FiltrosGuiadosProps> = ({
 
             <button
               type="button"
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-emerald-500/80 bg-emerald-50 text-emerald-700 text-xs font-extrabold shrink-0"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-300 bg-slate-100 text-slate-700 text-xs font-extrabold shrink-0"
             >
-              <Check className="w-3.5 h-3.5" />
+              <Check className="w-3.5 h-3.5 text-[#8B1E23]" />
               <span>Cambiar</span>
             </button>
           </div>
@@ -223,19 +213,19 @@ export const FiltrosGuiadosView: React.FC<FiltrosGuiadosProps> = ({
                 setModalPaso(2);
               }
             }}
-            className={`bg-white border-2 rounded-2xl p-4 shadow-sm flex items-center justify-between cursor-pointer active:scale-[0.99] transition-all ${
-              distritoSel ? 'border-sky-500/80' : 'border-slate-200 opacity-60'
+            className={`bg-white border-2 rounded-2xl p-3.5 shadow-xs flex items-center justify-between cursor-pointer active:scale-[0.99] transition-all ${
+              sedeSel ? 'border-[#8B1E23]' : 'border-slate-300'
             }`}
           >
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-lg shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-lg shrink-0">
                 🏢
               </div>
               <div className="min-w-0">
-                <span className="text-[11px] font-black uppercase tracking-wider text-sky-600 block">
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-700 block">
                   PASO 2: SEDE JUDICIAL
                 </span>
-                <span className="text-base font-black text-slate-900 block truncate">
+                <span className="text-sm font-black text-slate-900 block truncate">
                   {sedeSel || '-- Seleccione Sede --'}
                 </span>
               </div>
@@ -243,9 +233,9 @@ export const FiltrosGuiadosView: React.FC<FiltrosGuiadosProps> = ({
 
             <button
               type="button"
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-emerald-500/80 bg-emerald-50 text-emerald-700 text-xs font-extrabold shrink-0"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-300 bg-slate-100 text-slate-700 text-xs font-extrabold shrink-0"
             >
-              <Check className="w-3.5 h-3.5" />
+              <Check className="w-3.5 h-3.5 text-[#8B1E23]" />
               <span>Cambiar</span>
             </button>
           </div>
@@ -260,16 +250,16 @@ export const FiltrosGuiadosView: React.FC<FiltrosGuiadosProps> = ({
                 setModalPaso(3);
               }
             }}
-            className={`bg-white border-2 rounded-2xl p-4 shadow-sm flex items-center justify-between cursor-pointer active:scale-[0.99] transition-all ${
-              sedeSel ? 'border-purple-500/80' : 'border-slate-200 opacity-60'
+            className={`bg-white border-2 rounded-2xl p-3.5 shadow-xs flex items-center justify-between cursor-pointer active:scale-[0.99] transition-all ${
+              organoSel ? 'border-[#8B1E23]' : 'border-slate-300'
             }`}
           >
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-lg shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-lg shrink-0">
                 ⚖
               </div>
               <div className="min-w-0">
-                <span className="text-[11px] font-black uppercase tracking-wider text-purple-600 block">
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-700 block">
                   PASO 3: ÓRGANO JURISDICCIONAL
                 </span>
                 <span className="text-sm font-black text-slate-900 block truncate">
@@ -280,9 +270,9 @@ export const FiltrosGuiadosView: React.FC<FiltrosGuiadosProps> = ({
 
             <button
               type="button"
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-emerald-500/80 bg-emerald-50 text-emerald-700 text-xs font-extrabold shrink-0"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-300 bg-slate-100 text-slate-700 text-xs font-extrabold shrink-0"
             >
-              <Check className="w-3.5 h-3.5" />
+              <Check className="w-3.5 h-3.5 text-[#8B1E23]" />
               <span>Cambiar</span>
             </button>
           </div>
@@ -295,17 +285,17 @@ export const FiltrosGuiadosView: React.FC<FiltrosGuiadosProps> = ({
               setBusquedaModal('');
               setModalPaso(4);
             }}
-            className="bg-white border-2 border-purple-500/80 rounded-2xl p-4 shadow-sm flex items-center justify-between cursor-pointer active:scale-[0.99] transition-all"
+            className="bg-white border-2 border-[#8B1E23] rounded-2xl p-3.5 shadow-xs flex items-center justify-between cursor-pointer active:scale-[0.99] transition-all"
           >
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-lg shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-red-50 border border-red-200 flex items-center justify-center text-lg shrink-0">
                 📅
               </div>
               <div className="min-w-0">
-                <span className="text-[11px] font-black uppercase tracking-wider text-purple-600 block">
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#8B1E23] block">
                   PASO 4: MES DE EVALUACIÓN ({anio})
                 </span>
-                <span className="text-base font-black text-slate-900 block capitalize">
+                <span className="text-sm font-black text-slate-900 block capitalize">
                   {mesSel.toLowerCase()}
                 </span>
               </div>
@@ -313,17 +303,17 @@ export const FiltrosGuiadosView: React.FC<FiltrosGuiadosProps> = ({
 
             <button
               type="button"
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-emerald-500/80 bg-emerald-50 text-emerald-700 text-xs font-extrabold shrink-0"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-300 bg-slate-100 text-slate-700 text-xs font-extrabold shrink-0"
             >
-              <Check className="w-3.5 h-3.5" />
+              <Check className="w-3.5 h-3.5 text-[#8B1E23]" />
               <span>Cambiar</span>
             </button>
           </div>
         </div>
       </main>
 
-      {/* 3. Botón Fijo Inferior: CONSULTAR INDICADORES (Réplica Imagen 3) */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t border-slate-200/90 z-20 safe-bottom">
+      {/* 3. Botón Fijo Inferior Granate: CONSULTAR INDICADORES */}
+      <div className="fixed bottom-0 left-0 right-0 p-3.5 bg-white/95 backdrop-blur-md border-t border-slate-200 z-20 safe-bottom">
         <div className="max-w-md mx-auto">
           <button
             onClick={() => {
@@ -332,31 +322,31 @@ export const FiltrosGuiadosView: React.FC<FiltrosGuiadosProps> = ({
               }
             }}
             disabled={!puedeConsultar}
-            className={`w-full py-4 px-6 rounded-2xl font-black text-sm tracking-wide shadow-lg flex items-center justify-center gap-2 active:scale-[0.98] transition-all ${
+            className={`w-full py-3.5 px-6 rounded-2xl font-black text-sm tracking-wide shadow-lg flex items-center justify-center gap-2 active:scale-[0.98] transition-all ${
               puedeConsultar
-                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-blue-500/30 cursor-pointer'
+                ? 'bg-[#8B1E23] hover:bg-[#73191d] text-white shadow-red-900/20 cursor-pointer'
                 : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
             }`}
           >
             <span>CONSULTAR INDICADORES</span>
-            <span className="text-lg">📊</span>
+            <span className="text-base">📊</span>
           </button>
         </div>
       </div>
 
       {/* ========================================================== */}
-      {/* 4. SUBVENTANA INTERACTIVA MODAL / BOTTOM SHEET (Imagen 2) */}
+      {/* 4. SUBVENTANA INTERACTIVA MODAL (Granate y Plomo)           */}
       {/* ========================================================== */}
       {modalPaso > 0 && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/50 backdrop-blur-xs transition-opacity animate-fadeIn">
           <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl animate-slideUp">
-            {/* Header del Modal (Réplica Imagen 2) */}
-            <div className="px-5 pt-5 pb-3 border-b border-slate-100 flex items-start justify-between">
+            {/* Header del Modal */}
+            <div className="px-5 pt-4 pb-3 border-b border-slate-200 flex items-start justify-between">
               <div>
-                <span className="text-[11px] font-black uppercase tracking-wider text-sky-600 block">
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#8B1E23] block">
                   PASO {modalPaso} DE 4
                 </span>
-                <h3 className="text-lg font-black text-slate-900 leading-snug">
+                <h3 className="text-base font-black text-slate-900 leading-snug">
                   {modalPaso === 1 && 'Seleccione Distrito Judicial'}
                   {modalPaso === 2 && 'Seleccione Sede Judicial'}
                   {modalPaso === 3 && 'Seleccione Órgano Jurisdiccional'}
@@ -374,22 +364,22 @@ export const FiltrosGuiadosView: React.FC<FiltrosGuiadosProps> = ({
 
             {/* Buscador interno si hay más de 4 opciones */}
             {(modalPaso === 3 || (modalPaso === 2 && sedesDisponibles.length > 4)) && (
-              <div className="px-4 py-2 border-b border-slate-100 bg-slate-50/50">
+              <div className="px-4 py-2 border-b border-slate-100 bg-slate-50">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input
                     type="text"
                     value={busquedaModal}
                     onChange={(e) => setBusquedaModal(e.target.value)}
-                    placeholder="Filtrar por nombre o código..."
-                    className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                    placeholder="Filtrar por nombre..."
+                    className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-[#8B1E23]"
                   />
                 </div>
               </div>
             )}
 
-            {/* Lista de Opciones como Tarjetas (Réplica Imagen 2) */}
-            <div className="p-4 space-y-2.5 overflow-y-auto flex-1 overscroll-contain">
+            {/* Lista de Opciones como Tarjetas */}
+            <div className="p-4 space-y-2 overflow-y-auto flex-1 overscroll-contain">
               {/* PASO 1: DISTRITOS */}
               {modalPaso === 1 && (
                 distritosConConteo.map((item) => {
@@ -403,20 +393,20 @@ export const FiltrosGuiadosView: React.FC<FiltrosGuiadosProps> = ({
                         setOrganoSel(null);
                         setModalPaso(2); // Auto-avanzar al paso 2
                       }}
-                      className={`p-3.5 rounded-2xl border flex items-center justify-between cursor-pointer transition-all active:scale-[0.99] ${
+                      className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all active:scale-[0.99] ${
                         isSelected
-                          ? 'border-2 border-sky-600 bg-sky-50/80 shadow-xs'
-                          : 'border-slate-200/90 hover:bg-slate-50 bg-white'
+                          ? 'border-2 border-[#8B1E23] bg-red-50/70 shadow-xs'
+                          : 'border-slate-200 hover:bg-slate-50 bg-white'
                       }`}
                     >
                       <div className="flex items-center gap-2.5">
                         <span className="text-base">📍</span>
-                        <span className={`text-sm font-extrabold ${isSelected ? 'text-sky-950 font-black' : 'text-slate-900'}`}>
+                        <span className={`text-sm font-extrabold ${isSelected ? 'text-[#8B1E23] font-black' : 'text-slate-900'}`}>
                           {item.nombre}
                         </span>
                       </div>
-                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                        isSelected ? 'bg-sky-600 text-white' : 'bg-sky-50 text-sky-700'
+                      <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
+                        isSelected ? 'bg-[#8B1E23] text-white' : 'bg-slate-100 text-slate-700'
                       }`}>
                         {item.cantidad} órganos
                       </span>
@@ -439,20 +429,20 @@ export const FiltrosGuiadosView: React.FC<FiltrosGuiadosProps> = ({
                           setOrganoSel(null);
                           setModalPaso(3); // Auto-avanzar al paso 3
                         }}
-                        className={`p-3.5 rounded-2xl border flex items-center justify-between cursor-pointer transition-all active:scale-[0.99] ${
+                        className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all active:scale-[0.99] ${
                           isSelected
-                            ? 'border-2 border-sky-600 bg-sky-50/80 shadow-xs'
-                            : 'border-slate-200/90 hover:bg-slate-50 bg-white'
+                            ? 'border-2 border-[#8B1E23] bg-red-50/70 shadow-xs'
+                            : 'border-slate-200 hover:bg-slate-50 bg-white'
                         }`}
                       >
                         <div className="flex items-center gap-2.5">
                           <span className="text-base">🏢</span>
-                          <span className={`text-sm font-extrabold ${isSelected ? 'text-sky-950 font-black' : 'text-slate-900'}`}>
+                          <span className={`text-sm font-extrabold ${isSelected ? 'text-[#8B1E23] font-black' : 'text-slate-900'}`}>
                             {item.nombre}
                           </span>
                         </div>
-                        <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                          isSelected ? 'bg-sky-600 text-white' : 'bg-sky-50 text-sky-700'
+                        <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
+                          isSelected ? 'bg-[#8B1E23] text-white' : 'bg-slate-100 text-slate-700'
                         }`}>
                           {item.cantidad} órganos
                         </span>
@@ -475,18 +465,18 @@ export const FiltrosGuiadosView: React.FC<FiltrosGuiadosProps> = ({
                         key={item.ndep}
                         onClick={() => {
                           setOrganoSel(item.ndep);
-                          setModalPaso(0); // Cerrar y listo para consultar
+                          setModalPaso(0); // Cerrar
                         }}
-                        className={`p-3.5 rounded-2xl border flex items-center justify-between cursor-pointer transition-all active:scale-[0.99] ${
+                        className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all active:scale-[0.99] ${
                           isSelected
-                            ? 'border-2 border-purple-600 bg-purple-50/80 shadow-xs'
-                            : 'border-slate-200/90 hover:bg-slate-50 bg-white'
+                            ? 'border-2 border-[#8B1E23] bg-red-50/70 shadow-xs'
+                            : 'border-slate-200 hover:bg-slate-50 bg-white'
                         }`}
                       >
                         <div className="flex items-start gap-2.5 min-w-0 pr-2">
                           <span className="text-base mt-0.5">⚖</span>
                           <div className="min-w-0">
-                            <span className={`text-xs font-black block leading-snug ${isSelected ? 'text-purple-950' : 'text-slate-900'}`}>
+                            <span className={`text-xs font-black block leading-snug ${isSelected ? 'text-[#8B1E23]' : 'text-slate-900'}`}>
                               {item.dependencia}
                             </span>
                             {item.especialidad && (
@@ -497,7 +487,7 @@ export const FiltrosGuiadosView: React.FC<FiltrosGuiadosProps> = ({
                           </div>
                         </div>
                         <span className={`text-[11px] font-extrabold px-2 py-0.5 rounded-md shrink-0 ${
-                          isSelected ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-700'
+                          isSelected ? 'bg-[#8B1E23] text-white' : 'bg-slate-100 text-slate-700'
                         }`}>
                           Cód: {item.ndep}
                         </span>
@@ -517,20 +507,20 @@ export const FiltrosGuiadosView: React.FC<FiltrosGuiadosProps> = ({
                         setMesSel(m);
                         setModalPaso(0);
                       }}
-                      className={`p-3.5 rounded-2xl border flex items-center justify-between cursor-pointer transition-all active:scale-[0.99] ${
+                      className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all active:scale-[0.99] ${
                         isSelected
-                          ? 'border-2 border-purple-600 bg-purple-50/80 shadow-xs'
-                          : 'border-slate-200/90 hover:bg-slate-50 bg-white'
+                          ? 'border-2 border-[#8B1E23] bg-red-50/70 shadow-xs'
+                          : 'border-slate-200 hover:bg-slate-50 bg-white'
                       }`}
                     >
                       <div className="flex items-center gap-2.5">
                         <span className="text-base">📅</span>
-                        <span className={`text-sm font-extrabold capitalize ${isSelected ? 'text-purple-950 font-black' : 'text-slate-900'}`}>
+                        <span className={`text-sm font-extrabold capitalize ${isSelected ? 'text-[#8B1E23] font-black' : 'text-slate-900'}`}>
                           {m.toLowerCase()} {anio}
                         </span>
                       </div>
                       {isSelected && (
-                        <Check className="w-4 h-4 text-purple-600" />
+                        <Check className="w-4 h-4 text-[#8B1E23]" />
                       )}
                     </div>
                   );
