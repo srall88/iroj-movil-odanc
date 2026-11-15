@@ -1,65 +1,28 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import datasetRaw from './data/consultasData.json';
-import { DatasetIROJ, EvaluacionItem, TabType } from './types';
+import { DatasetIROJ, EvaluacionItem, PantallaType } from './types';
 import { HeaderMobile } from './components/HeaderMobile';
 import { PortadaLanding } from './components/PortadaLanding';
-import { ConsultaCascadaView } from './components/ConsultaCascadaView';
-import { BuscadorFlotante } from './components/BuscadorFlotante';
-import { SegmentedControls } from './components/SegmentedControls';
-import { TarjetaBentoDependencia } from './components/TarjetaBentoDependencia';
-import { BottomNavBar } from './components/BottomNavBar';
-import { DashboardInicio } from './components/DashboardInicio';
-import { RankingView } from './components/RankingView';
-import { ResumenEjecutivoView } from './components/ResumenEjecutivoView';
-import { ModalMesSelector } from './components/ModalMesSelector';
-import { Frown } from 'lucide-react';
+import { FiltrosGuiadosView } from './components/FiltrosGuiadosView';
+import { FichaIndicadoresView } from './components/FichaIndicadoresView';
 
 const dataset = datasetRaw as unknown as DatasetIROJ;
 
 export default function App() {
-  // Estado de navegación (inicia en 'portada' para dar la bienvenida oficial)
-  const [tabActiva, setTabActiva] = useState<TabType>('portada');
+  // Estado de navegación: 'portada' | 'filtros' | 'ficha'
+  const [pantalla, setPantalla] = useState<PantallaType>('portada');
 
-  // Estado de meses y modal
-  const mesesDisponibles = dataset.meses || ['AGOSTO'];
-  const [mesActivo, setMesActivo] = useState<string>(
-    mesesDisponibles.includes('AGOSTO') ? 'AGOSTO' : mesesDisponibles[mesesDisponibles.length - 1]
-  );
-  const [modalMesAbierto, setModalMesAbierto] = useState<boolean>(false);
-
-  // Estados de filtros y búsqueda
-  const [busqueda, setBusqueda] = useState<string>('');
-  const [especialidadActiva, setEspecialidadActiva] = useState<string>('TODAS');
-  const [nivelRiesgoActivo, setNivelRiesgoActivo] = useState<string>('TODOS');
-  const [distritoActivo, setDistritoActivo] = useState<string>('TODOS');
-
-  // Estado de conectividad offline/online
-  const [isOnline, setIsOnline] = useState<boolean>(
-    typeof navigator !== 'undefined' ? navigator.onLine : true
+  // Meses disponibles (ordenados y con OCTUBRE como predeterminado)
+  const mesesDisponibles = dataset.meses || ['OCTUBRE', 'AGOSTO', 'MAYO', 'MARZO'];
+  
+  // Selección actual
+  const [ndepSeleccionado, setNdepSeleccionado] = useState<number | null>(null);
+  const [mesSeleccionado, setMesSeleccionado] = useState<string>(
+    mesesDisponibles.includes('OCTUBRE') ? 'OCTUBRE' : mesesDisponibles[0]
   );
 
-  useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
-
-  // Evaluaciones correspondientes al mes seleccionado
-  const evaluacionesDelMes = useMemo(() => {
-    return (dataset.evaluaciones || []).filter(
-      (e) => e.mes.toUpperCase() === mesActivo.toUpperCase()
-    );
-  }, [mesActivo]);
-
-  // Mapa histórico de todas las evaluaciones por NDEP para mostrar evolución en el Accordion
-  const historialPorOrgano = useMemo(() => {
+  // Mapa de evaluaciones por NDEP para acceso y evolución histórica
+  const evaluacionesPorOrgano = useMemo(() => {
     const mapa = new Map<number, EvaluacionItem[]>();
     for (const ev of dataset.evaluaciones || []) {
       if (!mapa.has(ev.ndep)) {
@@ -70,216 +33,106 @@ export default function App() {
     return mapa;
   }, []);
 
-  // Filtro reactivo en memoria (Zero-latency instant search)
-  const evaluacionesFiltradas = useMemo(() => {
-    let resultado = [...evaluacionesDelMes];
+  // Evaluación activa que se está visualizando
+  const evaluacionActual = useMemo(() => {
+    if (ndepSeleccionado === null) return null;
+    const lista = evaluacionesPorOrgano.get(ndepSeleccionado) || [];
+    
+    // Buscar la del mes seleccionado
+    const evMes = lista.find(e => e.mes.toUpperCase() === mesSeleccionado.toUpperCase());
+    if (evMes) return evMes;
 
-    if (especialidadActiva !== 'TODAS') {
-      resultado = resultado.filter(
-        (e) => e.especialidad?.toUpperCase() === especialidadActiva.toUpperCase()
-      );
-    }
+    // Si ese mes específico no tiene registro para ese órgano, tomar el último disponible
+    return lista[0] || null;
+  }, [ndepSeleccionado, mesSeleccionado, evaluacionesPorOrgano]);
 
-    if (nivelRiesgoActivo !== 'TODOS') {
-      resultado = resultado.filter((e) => {
-        const nivel = e.nivel_riesgo?.toUpperCase();
-        if (nivelRiesgoActivo === 'CRITICO') return nivel === 'CRITICO' || nivel === 'MUY ALTO';
-        return nivel === nivelRiesgoActivo;
-      });
-    }
+  // Historial de meses del órgano seleccionado
+  const historialOrgano = useMemo(() => {
+    if (ndepSeleccionado === null) return [];
+    return evaluacionesPorOrgano.get(ndepSeleccionado) || [];
+  }, [ndepSeleccionado, evaluacionesPorOrgano]);
 
-    if (distritoActivo !== 'TODOS') {
-      resultado = resultado.filter(
-        (e) => e.distrito?.toUpperCase() === distritoActivo.toUpperCase()
-      );
-    }
-
-    if (busqueda.trim()) {
-      const q = busqueda.toLowerCase().trim();
-      resultado = resultado.filter((e) => {
-        return (
-          e.dependencia.toLowerCase().includes(q) ||
-          e.ndep.toString().includes(q) ||
-          (e.sede && e.sede.toLowerCase().includes(q)) ||
-          (e.distrito && e.distrito.toLowerCase().includes(q)) ||
-          (e.especialidad && e.especialidad.toLowerCase().includes(q))
-        );
-      });
-    }
-
-    return resultado;
-  }, [evaluacionesDelMes, especialidadActiva, nivelRiesgoActivo, distritoActivo, busqueda]);
-
-  // Sugerencias predictivas
-  const sugerenciasPredictivas = useMemo(() => {
-    if (!busqueda || busqueda.length < 2) return [];
-    const q = busqueda.toLowerCase();
-    const matches = new Set<string>();
-
-    for (const e of evaluacionesDelMes) {
-      if (e.distrito && e.distrito.toLowerCase().includes(q)) matches.add(e.distrito);
-      if (e.sede && e.sede.toLowerCase().includes(q)) matches.add(e.sede);
-      if (e.especialidad && e.especialidad.toLowerCase().includes(q)) matches.add(e.especialidad);
-    }
-
-    return Array.from(matches).slice(0, 4);
-  }, [busqueda, evaluacionesDelMes]);
-
-  // Resumen del mes actual
-  const resumenMesActual = dataset.resumen_por_mes?.[mesActivo] || {
-    total_evaluados: evaluacionesDelMes.length,
-    promedio_puntaje: 0,
-    distribucion_niveles: { CRITICO: 0, ALTO: 0, MEDIO: 0, BAJO: 0 },
-    top_riesgo: [],
-    top_optimo: []
+  // Manejador al consultar desde los filtros guiados
+  const handleConsultar = (ndep: number, mes: string) => {
+    setNdepSeleccionado(ndep);
+    setMesSeleccionado(mes);
+    setPantalla('ficha');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
-    <div className="relative min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-indigo-600 selection:text-white pb-20 overflow-x-hidden">
+    <div className="relative min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-indigo-600 selection:text-white overflow-x-hidden">
       {/* Background Snippet (ibelick - Grid + Aura glow) */}
       <div className="fixed inset-0 bg-grid-pattern opacity-40 pointer-events-none -z-10"></div>
-      <div className="fixed top-0 left-0 right-0 h-80 bg-aura-glow pointer-events-none -z-10"></div>
+      <div className="fixed top-0 left-0 right-0 h-96 bg-aura-glow pointer-events-none -z-10"></div>
 
-      {/* Si estamos en portada, se muestra a pantalla completa */}
-      {tabActiva === 'portada' ? (
+      {/* ============================================================ */}
+      {/* 1. PANTALLA: PORTADA DE ENTRADA                              */}
+      {/* ============================================================ */}
+      {pantalla === 'portada' && (
         <PortadaLanding
           totalDependencias={dataset.total_organos || 166}
           totalDistritos={(dataset.distritos || []).length || 8}
-          mesActivo={mesActivo}
+          mesActivo="OCTUBRE"
           anio={dataset.anio_predeterminado || 2026}
-          onIngresar={() => setTabActiva('inicio')}
-          onConsultaDirecta={() => setTabActiva('cascada')}
+          onIngresar={() => {
+            setPantalla('filtros');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
         />
-      ) : (
+      )}
+
+      {/* ============================================================ */}
+      {/* 2. PANTALLA: FILTROS GUIADOS (Paso 1, 2, 3, 4)               */}
+      {/* ============================================================ */}
+      {pantalla === 'filtros' && (
         <>
-          {/* Header Mobile Premium en Modo Claro */}
           <HeaderMobile
-            mesActivo={mesActivo}
-            anio={dataset.anio_predeterminado || 2026}
-            totalEvaluados={evaluacionesDelMes.length}
-            onOpenMesSelector={() => setModalMesAbierto(true)}
-            isOnline={isOnline}
-            onGoHome={() => setTabActiva('portada')}
+            onSalir={() => setPantalla('portada')}
+            tituloAccion="Salir"
           />
-
-          {/* Contenido Principal según Pestaña Activa */}
-          <main className="flex-1 max-w-md w-full mx-auto">
-            {/* PESTAÑA 1: INICIO (Dashboard Ejecutivo) */}
-            {tabActiva === 'inicio' && (
-              <DashboardInicio
-                resumen={resumenMesActual}
-                mesActivo={mesActivo}
-                anio={dataset.anio_predeterminado || 2026}
-                onNavigateTab={setTabActiva}
-                onSelectOrgano={(ndep) => {
-                  setBusqueda(ndep.toString());
-                  setTabActiva('dependencias');
-                }}
-                onOpenCascada={() => setTabActiva('cascada')}
-              />
-            )}
-
-            {/* PESTAÑA 2: CONSULTA CASCADA (Distrito ➔ Sede ➔ Juzgado) */}
-            {tabActiva === 'cascada' && (
-              <ConsultaCascadaView
-                evaluaciones={evaluacionesDelMes}
-                distritos={dataset.distritos || []}
-                mesActivo={mesActivo}
-                anio={dataset.anio_predeterminado || 2026}
-                historialPorOrgano={historialPorOrgano}
-              />
-            )}
-
-            {/* PESTAÑA 3: CATÁLOGO DE DEPENDENCIAS */}
-            {tabActiva === 'dependencias' && (
-              <div className="space-y-1">
-                <BuscadorFlotante
-                  busqueda={busqueda}
-                  setBusqueda={setBusqueda}
-                  totalResultados={evaluacionesFiltradas.length}
-                  totalTotal={evaluacionesDelMes.length}
-                  sugerencias={sugerenciasPredictivas}
-                  onSelectSugerencia={(sug) => setBusqueda(sug)}
-                />
-
-                <SegmentedControls
-                  especialidades={dataset.especialidades || []}
-                  especialidadActiva={especialidadActiva}
-                  setEspecialidadActiva={setEspecialidadActiva}
-                  nivelRiesgoActivo={nivelRiesgoActivo}
-                  setNivelRiesgoActivo={setNivelRiesgoActivo}
-                  distritos={dataset.distritos || []}
-                  distritoActivo={distritoActivo}
-                  setDistritoActivo={setDistritoActivo}
-                />
-
-                <div className="px-4 py-3 space-y-3">
-                  {evaluacionesFiltradas.length > 0 ? (
-                    evaluacionesFiltradas.map((ev) => (
-                      <TarjetaBentoDependencia
-                        key={ev.id}
-                        evaluacion={ev}
-                        historialMeses={historialPorOrgano.get(ev.ndep) || []}
-                      />
-                    ))
-                  ) : (
-                    <div className="text-center py-12 px-4 bg-white rounded-3xl border border-slate-200/80 my-4 shadow-sm">
-                      <Frown className="w-10 h-10 text-slate-400 mx-auto mb-2" />
-                      <h4 className="text-sm font-bold text-slate-800">No se encontraron juzgados</h4>
-                      <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto">
-                        Intenta cambiar los términos de búsqueda o selecciona "Todas las áreas".
-                      </p>
-                      <button
-                        onClick={() => {
-                          setBusqueda('');
-                          setEspecialidadActiva('TODAS');
-                          setNivelRiesgoActivo('TODOS');
-                          setDistritoActivo('TODOS');
-                        }}
-                        className="mt-3 px-3.5 py-1.5 text-xs font-bold bg-indigo-600 text-white rounded-xl active:scale-95 transition-all shadow-sm"
-                      >
-                        Restablecer filtros
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* PESTAÑA 4: RANKING */}
-            {tabActiva === 'ranking' && (
-              <RankingView
-                topRiesgo={resumenMesActual.top_riesgo || []}
-                topOptimo={resumenMesActual.top_optimo || []}
-                mesActivo={mesActivo}
-                anio={dataset.anio_predeterminado || 2026}
-              />
-            )}
-
-            {/* PESTAÑA 5: RESUMEN EJECUTIVO */}
-            {tabActiva === 'resumen' && (
-              <ResumenEjecutivoView
-                evaluaciones={evaluacionesDelMes}
-                mesActivo={mesActivo}
-                anio={dataset.anio_predeterminado || 2026}
-              />
-            )}
+          <main className="flex-1 pb-10">
+            <FiltrosGuiadosView
+              evaluacionesTotales={dataset.evaluaciones || []}
+              distritos={dataset.distritos || []}
+              meses={mesesDisponibles}
+              anio={dataset.anio_predeterminado || 2026}
+              onConsultar={handleConsultar}
+            />
           </main>
-
-          {/* Bottom Navigation Bar fija estilo Apple / iOS en Modo Claro */}
-          <BottomNavBar tabActiva={tabActiva} setTabActiva={setTabActiva} />
         </>
       )}
 
-      {/* Modal / Bottom Sheet para cambiar mes */}
-      <ModalMesSelector
-        abierto={modalMesAbierto}
-        onClose={() => setModalMesAbierto(false)}
-        meses={mesesDisponibles}
-        mesActivo={mesActivo}
-        anio={dataset.anio_predeterminado || 2026}
-        onSelectMes={(m) => setMesActivo(m)}
-      />
+      {/* ============================================================ */}
+      {/* 3. PANTALLA: FICHA DE INDICADORES IROJ                       */}
+      {/* ============================================================ */}
+      {pantalla === 'ficha' && evaluacionActual && (
+        <>
+          <HeaderMobile
+            onSalir={() => setPantalla('portada')}
+            tituloAccion="Salir"
+            mostrarVolver={true}
+            onVolver={() => {
+              setPantalla('filtros');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
+          <main className="flex-1 pb-10">
+            <FichaIndicadoresView
+              evaluacionActual={evaluacionActual}
+              mesesDisponibles={mesesDisponibles}
+              mesActivo={mesSeleccionado}
+              anio={dataset.anio_predeterminado || 2026}
+              onCambiarMes={(m) => setMesSeleccionado(m)}
+              onVolverFiltros={() => {
+                setPantalla('filtros');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              historialMeses={historialOrgano}
+            />
+          </main>
+        </>
+      )}
     </div>
   );
 }
