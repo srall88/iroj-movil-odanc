@@ -7,6 +7,7 @@ interface HeaderMobileProps {
   totalEvaluados: number;
   onOpenMesSelector: () => void;
   isOnline: boolean;
+  onGoHome: () => void;
 }
 
 export const HeaderMobile: React.FC<HeaderMobileProps> = ({
@@ -14,63 +15,72 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
   anio,
   totalEvaluados,
   onOpenMesSelector,
-  isOnline
+  isOnline,
+  onGoHome
 }) => {
   return (
-    <header className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 px-4 pt-3 pb-3 safe-top transition-all">
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/90 px-4 pt-3 pb-3 safe-top shadow-xs transition-all">
       <div className="flex items-center justify-between gap-2">
         {/* Logo Institucional + Título */}
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-600 via-indigo-600 to-blue-500 p-[1.5px] shadow-lg shadow-indigo-950/50 shrink-0">
-            <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
-              <span className="text-base font-extrabold bg-gradient-to-r from-amber-400 via-rose-300 to-indigo-300 bg-clip-text text-transparent">
-                PJ
-              </span>
+        <button 
+          onClick={onGoHome}
+          className="flex items-center gap-2.5 min-w-0 text-left active:scale-98 transition-transform"
+        >
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-700 via-blue-600 to-amber-500 p-[1.5px] shadow-sm shrink-0">
+            <div className="w-full h-full bg-white rounded-[10px] flex items-center justify-center p-0.5">
+              <img 
+                src="/imagenes/logo csjle.png" 
+                alt="CSJLE" 
+                className="w-full h-full object-contain"
+                onError={(e) => {
+                  (e.target as HTMLElement).style.display = 'none';
+                }}
+              />
             </div>
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
-              <h1 className="text-base font-bold text-white tracking-tight truncate">
+              <h1 className="text-base font-extrabold text-slate-900 tracking-tight truncate">
                 IROJ Móvil
               </h1>
-              <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-md">
-                PWA
+              <span className="px-1.5 py-0.5 text-[9px] font-black bg-indigo-50 text-indigo-700 border border-indigo-200 rounded">
+                CSJLE
               </span>
             </div>
-            <p className="text-[11px] font-medium text-slate-400 truncate">
-              ODANC · CSJ Lima Este
+            <p className="text-[11px] font-semibold text-slate-500 truncate">
+              ODANC · Lima Este
             </p>
           </div>
-        </div>
+        </button>
 
-        {/* Selector de Mes Táctil + Estado */}
+        {/* Selector de Mes Táctil */}
         <div className="flex items-center gap-1.5 shrink-0">
           <button
             onClick={onOpenMesSelector}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 rounded-xl text-xs font-semibold text-slate-200 shadow-sm active:scale-95 transition-transform"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200/80 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 shadow-xs active:scale-95 transition-all"
             aria-label="Cambiar mes de evaluación"
           >
-            <Calendar className="w-3.5 h-3.5 text-indigo-400" />
+            <Calendar className="w-3.5 h-3.5 text-indigo-600" />
             <span className="capitalize">{mesActivo.toLowerCase()} {anio}</span>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+            <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
           </button>
         </div>
       </div>
 
       {/* Chip de Corte Estadístico y Conectividad */}
-      <div className="mt-2.5 flex items-center justify-between text-[11px] text-slate-400 px-0.5">
+      <div className="mt-2.5 flex items-center justify-between text-[11px] text-slate-500 px-0.5 font-medium">
         <div className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-micro-pulse"></span>
-          <span>{totalEvaluados} órganos evaluados</span>
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-micro-pulse"></span>
+          <span><strong className="text-slate-800 font-bold">{totalEvaluados}</strong> dependencias evaluadas</span>
         </div>
         <div className="flex items-center gap-1">
           {isOnline ? (
-            <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-              <Wifi className="w-2.5 h-2.5" /> En línea
+            <span className="inline-flex items-center gap-1 text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 font-bold">
+              <Wifi className="w-2.5 h-2.5 text-emerald-600" /> En línea
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 text-[10px] text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
-              <WifiOff className="w-2.5 h-2.5" /> Offline local
+            <span className="inline-flex items-center gap-1 text-[10px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 font-bold">
+              <WifiOff className="w-2.5 h-2.5 text-amber-600" /> Offline
             </span>
           )}
         </div>

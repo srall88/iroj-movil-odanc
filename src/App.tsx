@@ -2,6 +2,8 @@ import React, { useState, useMemo, useEffect } from 'react';
 import datasetRaw from './data/consultasData.json';
 import { DatasetIROJ, EvaluacionItem, TabType } from './types';
 import { HeaderMobile } from './components/HeaderMobile';
+import { PortadaLanding } from './components/PortadaLanding';
+import { ConsultaCascadaView } from './components/ConsultaCascadaView';
 import { BuscadorFlotante } from './components/BuscadorFlotante';
 import { SegmentedControls } from './components/SegmentedControls';
 import { TarjetaBentoDependencia } from './components/TarjetaBentoDependencia';
@@ -10,13 +12,13 @@ import { DashboardInicio } from './components/DashboardInicio';
 import { RankingView } from './components/RankingView';
 import { ResumenEjecutivoView } from './components/ResumenEjecutivoView';
 import { ModalMesSelector } from './components/ModalMesSelector';
-import { Building2, Frown } from 'lucide-react';
+import { Frown } from 'lucide-react';
 
 const dataset = datasetRaw as unknown as DatasetIROJ;
 
 export default function App() {
-  // Estado de navegación
-  const [tabActiva, setTabActiva] = useState<TabType>('inicio');
+  // Estado de navegación (inicia en 'portada' para dar la bienvenida oficial)
+  const [tabActiva, setTabActiva] = useState<TabType>('portada');
 
   // Estado de meses y modal
   const mesesDisponibles = dataset.meses || ['AGOSTO'];
@@ -72,14 +74,12 @@ export default function App() {
   const evaluacionesFiltradas = useMemo(() => {
     let resultado = [...evaluacionesDelMes];
 
-    // 1. Filtro por Especialidad
     if (especialidadActiva !== 'TODAS') {
       resultado = resultado.filter(
         (e) => e.especialidad?.toUpperCase() === especialidadActiva.toUpperCase()
       );
     }
 
-    // 2. Filtro por Nivel de Riesgo
     if (nivelRiesgoActivo !== 'TODOS') {
       resultado = resultado.filter((e) => {
         const nivel = e.nivel_riesgo?.toUpperCase();
@@ -88,14 +88,12 @@ export default function App() {
       });
     }
 
-    // 3. Filtro por Distrito
     if (distritoActivo !== 'TODOS') {
       resultado = resultado.filter(
         (e) => e.distrito?.toUpperCase() === distritoActivo.toUpperCase()
       );
     }
 
-    // 4. Búsqueda de texto libre (Nombre, NDEP, Sede, Distrito)
     if (busqueda.trim()) {
       const q = busqueda.toLowerCase().trim();
       resultado = resultado.filter((e) => {
@@ -112,7 +110,7 @@ export default function App() {
     return resultado;
   }, [evaluacionesDelMes, especialidadActiva, nivelRiesgoActivo, distritoActivo, busqueda]);
 
-  // Sugerencias predictivas basadas en las palabras del catálogo
+  // Sugerencias predictivas
   const sugerenciasPredictivas = useMemo(() => {
     if (!busqueda || busqueda.length < 2) return [];
     const q = busqueda.toLowerCase();
@@ -137,113 +135,141 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white pb-20">
-      {/* Header Mobile Premium */}
-      <HeaderMobile
-        mesActivo={mesActivo}
-        anio={dataset.anio_predeterminado || 2026}
-        totalEvaluados={evaluacionesDelMes.length}
-        onOpenMesSelector={() => setModalMesAbierto(true)}
-        isOnline={isOnline}
-      />
+    <div className="relative min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-indigo-600 selection:text-white pb-20 overflow-x-hidden">
+      {/* Background Snippet (ibelick - Grid + Aura glow) */}
+      <div className="fixed inset-0 bg-grid-pattern opacity-40 pointer-events-none -z-10"></div>
+      <div className="fixed top-0 left-0 right-0 h-80 bg-aura-glow pointer-events-none -z-10"></div>
 
-      {/* Contenido Principal según Pestaña Activa */}
-      <main className="flex-1 max-w-md w-full mx-auto">
-        {/* PESTAÑA 1: INICIO (Dashboard Ejecutivo) */}
-        {tabActiva === 'inicio' && (
-          <DashboardInicio
-            resumen={resumenMesActual}
+      {/* Si estamos en portada, se muestra a pantalla completa */}
+      {tabActiva === 'portada' ? (
+        <PortadaLanding
+          totalDependencias={dataset.total_organos || 166}
+          totalDistritos={(dataset.distritos || []).length || 8}
+          mesActivo={mesActivo}
+          anio={dataset.anio_predeterminado || 2026}
+          onIngresar={() => setTabActiva('inicio')}
+          onConsultaDirecta={() => setTabActiva('cascada')}
+        />
+      ) : (
+        <>
+          {/* Header Mobile Premium en Modo Claro */}
+          <HeaderMobile
             mesActivo={mesActivo}
             anio={dataset.anio_predeterminado || 2026}
-            onNavigateTab={setTabActiva}
-            onSelectOrgano={(ndep) => {
-              setBusqueda(ndep.toString());
-              setTabActiva('dependencias');
-            }}
+            totalEvaluados={evaluacionesDelMes.length}
+            onOpenMesSelector={() => setModalMesAbierto(true)}
+            isOnline={isOnline}
+            onGoHome={() => setTabActiva('portada')}
           />
-        )}
 
-        {/* PESTAÑA 2: DEPENDENCIAS (Buscador y Tarjetas Bento) */}
-        {tabActiva === 'dependencias' && (
-          <div className="space-y-1">
-            {/* Buscador Flotante con Autocomplete */}
-            <BuscadorFlotante
-              busqueda={busqueda}
-              setBusqueda={setBusqueda}
-              totalResultados={evaluacionesFiltradas.length}
-              totalTotal={evaluacionesDelMes.length}
-              sugerencias={sugerenciasPredictivas}
-              onSelectSugerencia={(sug) => setBusqueda(sug)}
-            />
+          {/* Contenido Principal según Pestaña Activa */}
+          <main className="flex-1 max-w-md w-full mx-auto">
+            {/* PESTAÑA 1: INICIO (Dashboard Ejecutivo) */}
+            {tabActiva === 'inicio' && (
+              <DashboardInicio
+                resumen={resumenMesActual}
+                mesActivo={mesActivo}
+                anio={dataset.anio_predeterminado || 2026}
+                onNavigateTab={setTabActiva}
+                onSelectOrgano={(ndep) => {
+                  setBusqueda(ndep.toString());
+                  setTabActiva('dependencias');
+                }}
+                onOpenCascada={() => setTabActiva('cascada')}
+              />
+            )}
 
-            {/* Segmented Controls táctiles */}
-            <SegmentedControls
-              especialidades={dataset.especialidades || []}
-              especialidadActiva={especialidadActiva}
-              setEspecialidadActiva={setEspecialidadActiva}
-              nivelRiesgoActivo={nivelRiesgoActivo}
-              setNivelRiesgoActivo={setNivelRiesgoActivo}
-              distritos={dataset.distritos || []}
-              distritoActivo={distritoActivo}
-              setDistritoActivo={setDistritoActivo}
-            />
+            {/* PESTAÑA 2: CONSULTA CASCADA (Distrito ➔ Sede ➔ Juzgado) */}
+            {tabActiva === 'cascada' && (
+              <ConsultaCascadaView
+                evaluaciones={evaluacionesDelMes}
+                distritos={dataset.distritos || []}
+                mesActivo={mesActivo}
+                anio={dataset.anio_predeterminado || 2026}
+                historialPorOrgano={historialPorOrgano}
+              />
+            )}
 
-            {/* Lista de Tarjetas Bento */}
-            <div className="px-4 py-3 space-y-3">
-              {evaluacionesFiltradas.length > 0 ? (
-                evaluacionesFiltradas.map((ev) => (
-                  <TarjetaBentoDependencia
-                    key={ev.id}
-                    evaluacion={ev}
-                    historialMeses={historialPorOrgano.get(ev.ndep) || []}
-                  />
-                ))
-              ) : (
-                <div className="text-center py-12 px-4 bg-slate-900/40 rounded-3xl border border-slate-800/60 my-4">
-                  <Frown className="w-10 h-10 text-slate-500 mx-auto mb-2" />
-                  <h4 className="text-sm font-bold text-white">No se encontraron juzgados</h4>
-                  <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto">
-                    Intenta cambiar los términos de búsqueda o selecciona "Todas las áreas".
-                  </p>
-                  <button
-                    onClick={() => {
-                      setBusqueda('');
-                      setEspecialidadActiva('TODAS');
-                      setNivelRiesgoActivo('TODOS');
-                      setDistritoActivo('TODOS');
-                    }}
-                    className="mt-3 px-3.5 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-xl active:scale-95 transition-all"
-                  >
-                    Restablecer filtros
-                  </button>
+            {/* PESTAÑA 3: CATÁLOGO DE DEPENDENCIAS */}
+            {tabActiva === 'dependencias' && (
+              <div className="space-y-1">
+                <BuscadorFlotante
+                  busqueda={busqueda}
+                  setBusqueda={setBusqueda}
+                  totalResultados={evaluacionesFiltradas.length}
+                  totalTotal={evaluacionesDelMes.length}
+                  sugerencias={sugerenciasPredictivas}
+                  onSelectSugerencia={(sug) => setBusqueda(sug)}
+                />
+
+                <SegmentedControls
+                  especialidades={dataset.especialidades || []}
+                  especialidadActiva={especialidadActiva}
+                  setEspecialidadActiva={setEspecialidadActiva}
+                  nivelRiesgoActivo={nivelRiesgoActivo}
+                  setNivelRiesgoActivo={setNivelRiesgoActivo}
+                  distritos={dataset.distritos || []}
+                  distritoActivo={distritoActivo}
+                  setDistritoActivo={setDistritoActivo}
+                />
+
+                <div className="px-4 py-3 space-y-3">
+                  {evaluacionesFiltradas.length > 0 ? (
+                    evaluacionesFiltradas.map((ev) => (
+                      <TarjetaBentoDependencia
+                        key={ev.id}
+                        evaluacion={ev}
+                        historialMeses={historialPorOrgano.get(ev.ndep) || []}
+                      />
+                    ))
+                  ) : (
+                    <div className="text-center py-12 px-4 bg-white rounded-3xl border border-slate-200/80 my-4 shadow-sm">
+                      <Frown className="w-10 h-10 text-slate-400 mx-auto mb-2" />
+                      <h4 className="text-sm font-bold text-slate-800">No se encontraron juzgados</h4>
+                      <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto">
+                        Intenta cambiar los términos de búsqueda o selecciona "Todas las áreas".
+                      </p>
+                      <button
+                        onClick={() => {
+                          setBusqueda('');
+                          setEspecialidadActiva('TODAS');
+                          setNivelRiesgoActivo('TODOS');
+                          setDistritoActivo('TODOS');
+                        }}
+                        className="mt-3 px-3.5 py-1.5 text-xs font-bold bg-indigo-600 text-white rounded-xl active:scale-95 transition-all shadow-sm"
+                      >
+                        Restablecer filtros
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          </div>
-        )}
+              </div>
+            )}
 
-        {/* PESTAÑA 3: RANKING */}
-        {tabActiva === 'ranking' && (
-          <RankingView
-            topRiesgo={resumenMesActual.top_riesgo || []}
-            topOptimo={resumenMesActual.top_optimo || []}
-            mesActivo={mesActivo}
-            anio={dataset.anio_predeterminado || 2026}
-          />
-        )}
+            {/* PESTAÑA 4: RANKING */}
+            {tabActiva === 'ranking' && (
+              <RankingView
+                topRiesgo={resumenMesActual.top_riesgo || []}
+                topOptimo={resumenMesActual.top_optimo || []}
+                mesActivo={mesActivo}
+                anio={dataset.anio_predeterminado || 2026}
+              />
+            )}
 
-        {/* PESTAÑA 4: RESUMEN EJECUTIVO */}
-        {tabActiva === 'resumen' && (
-          <ResumenEjecutivoView
-            evaluaciones={evaluacionesDelMes}
-            mesActivo={mesActivo}
-            anio={dataset.anio_predeterminado || 2026}
-          />
-        )}
-      </main>
+            {/* PESTAÑA 5: RESUMEN EJECUTIVO */}
+            {tabActiva === 'resumen' && (
+              <ResumenEjecutivoView
+                evaluaciones={evaluacionesDelMes}
+                mesActivo={mesActivo}
+                anio={dataset.anio_predeterminado || 2026}
+              />
+            )}
+          </main>
 
-      {/* Bottom Navigation Bar fija estilo Apple / iOS */}
-      <BottomNavBar tabActiva={tabActiva} setTabActiva={setTabActiva} />
+          {/* Bottom Navigation Bar fija estilo Apple / iOS en Modo Claro */}
+          <BottomNavBar tabActiva={tabActiva} setTabActiva={setTabActiva} />
+        </>
+      )}
 
       {/* Modal / Bottom Sheet para cambiar mes */}
       <ModalMesSelector

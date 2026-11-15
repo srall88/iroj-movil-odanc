@@ -30,15 +30,15 @@ export const SegmentedControls: React.FC<SegmentedControlsProps> = ({
   ];
 
   return (
-    <div className="px-4 py-2 space-y-2 border-b border-slate-900 bg-slate-950/60">
+    <div className="px-4 py-2 space-y-2 border-b border-slate-200/80 bg-white/70 backdrop-blur-xs">
       {/* 1. Carrusel de Especialidades */}
       <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
         <button
           onClick={() => setEspecialidadActiva('TODAS')}
-          className={`px-3 py-1.5 text-xs font-semibold rounded-xl whitespace-nowrap active:scale-95 transition-all shrink-0 ${
+          className={`px-3 py-1.5 text-xs font-bold rounded-xl whitespace-nowrap active:scale-95 transition-all shrink-0 ${
             especialidadActiva === 'TODAS'
-              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-              : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 border border-slate-800'
+              ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
+              : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200'
           }`}
         >
           Todas las áreas
@@ -48,10 +48,10 @@ export const SegmentedControls: React.FC<SegmentedControlsProps> = ({
           <button
             key={esp}
             onClick={() => setEspecialidadActiva(esp)}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-xl whitespace-nowrap active:scale-95 transition-all shrink-0 ${
+            className={`px-3 py-1.5 text-xs font-bold rounded-xl whitespace-nowrap active:scale-95 transition-all shrink-0 ${
               especialidadActiva === esp
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 border border-slate-800'
+                ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
+                : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200'
             }`}
           >
             {esp}
@@ -59,16 +59,16 @@ export const SegmentedControls: React.FC<SegmentedControlsProps> = ({
         ))}
       </div>
 
-      {/* 2. Filtro rápido por Nivel de Riesgo y Distrito */}
+      {/* 2. Filtro rápido por Semáforo de Riesgo y Distrito */}
       <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
         {niveles.map((n) => (
           <button
             key={n.id}
             onClick={() => setNivelRiesgoActivo(n.id)}
-            className={`px-2.5 py-1 text-[11px] font-medium rounded-lg whitespace-nowrap active:scale-95 transition-all shrink-0 ${
+            className={`px-2.5 py-1 text-[11px] font-bold rounded-lg whitespace-nowrap active:scale-95 transition-all shrink-0 ${
               nivelRiesgoActivo === n.id
-                ? 'bg-slate-800 text-indigo-300 border border-indigo-500/40 ring-1 ring-indigo-500/20'
-                : 'bg-slate-950 text-slate-400 hover:text-slate-300 border border-slate-800/80'
+                ? 'bg-indigo-50 text-indigo-800 border border-indigo-300 ring-1 ring-indigo-500/20'
+                : 'bg-white text-slate-500 hover:text-slate-800 border border-slate-200'
             }`}
           >
             {n.label}
@@ -79,7 +79,7 @@ export const SegmentedControls: React.FC<SegmentedControlsProps> = ({
           <select
             value={distritoActivo}
             onChange={(e) => setDistritoActivo(e.target.value)}
-            className="px-2.5 py-1 text-[11px] font-medium rounded-lg bg-slate-950 text-slate-300 border border-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 shrink-0"
+            className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-white text-slate-700 border border-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 shrink-0"
           >
             <option value="TODOS">📍 Todos los Distritos</option>
             {distritos.map((dist) => (

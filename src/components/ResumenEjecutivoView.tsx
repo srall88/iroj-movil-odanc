@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { BarChart3, Building2, MapPin, Scale } from 'lucide-react';
+import { BarChart3, MapPin, Scale } from 'lucide-react';
 import { EvaluacionItem } from '../types';
 
 interface ResumenEjecutivoProps {
@@ -15,7 +15,6 @@ export const ResumenEjecutivoView: React.FC<ResumenEjecutivoProps> = ({
 }) => {
   const [agrupacion, setAgrupacion] = useState<'distrito' | 'especialidad'>('distrito');
 
-  // Calcular métricas agrupadas
   const grupos = useMemo(() => {
     const map = new Map<string, {
       nombre: string;
@@ -62,25 +61,25 @@ export const ResumenEjecutivoView: React.FC<ResumenEjecutivoProps> = ({
     <div className="px-4 py-4 space-y-4">
       {/* Cabecera */}
       <div>
-        <h2 className="text-base font-extrabold text-white tracking-tight flex items-center gap-1.5">
-          <BarChart3 className="w-4 h-4 text-indigo-400" /> Resumen Ejecutivo Consolidado
+        <h2 className="text-base font-extrabold text-slate-900 tracking-tight flex items-center gap-1.5">
+          <BarChart3 className="w-4 h-4 text-indigo-600" /> Resumen Ejecutivo Consolidado
         </h2>
-        <p className="text-xs text-slate-400 mt-0.5">
-          Distribución y promedios oficiales de {mesActivo.toLowerCase()} {anio}.
+        <p className="text-xs text-slate-500 mt-0.5">
+          Distribución de órganos y semáforos de {mesActivo.toLowerCase()} {anio}.
         </p>
       </div>
 
-      {/* Switch Agrupación: Por Distrito vs Por Especialidad */}
-      <div className="bg-slate-900/90 p-1 rounded-2xl border border-slate-800 flex gap-1">
+      {/* Switch Agrupación en Modo Claro */}
+      <div className="bg-slate-200/60 p-1 rounded-2xl border border-slate-200 flex gap-1">
         <button
           onClick={() => setAgrupacion('distrito')}
           className={`flex-1 py-1.5 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all ${
             agrupacion === 'distrito'
-              ? 'bg-indigo-600 text-white shadow-md'
-              : 'text-slate-400 hover:text-slate-200'
+              ? 'bg-white text-indigo-700 shadow-sm border border-indigo-200'
+              : 'text-slate-600 hover:text-slate-900'
           }`}
         >
-          <MapPin className="w-3.5 h-3.5" />
+          <MapPin className="w-3.5 h-3.5 text-indigo-600" />
           Por Distrito ({grupos.length})
         </button>
 
@@ -88,16 +87,16 @@ export const ResumenEjecutivoView: React.FC<ResumenEjecutivoProps> = ({
           onClick={() => setAgrupacion('especialidad')}
           className={`flex-1 py-1.5 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all ${
             agrupacion === 'especialidad'
-              ? 'bg-indigo-600 text-white shadow-md'
-              : 'text-slate-400 hover:text-slate-200'
+              ? 'bg-white text-indigo-700 shadow-sm border border-indigo-200'
+              : 'text-slate-600 hover:text-slate-900'
           }`}
         >
-          <Scale className="w-3.5 h-3.5" />
+          <Scale className="w-3.5 h-3.5 text-indigo-600" />
           Por Especialidad ({grupos.length})
         </button>
       </div>
 
-      {/* Tarjetas Bento de cada grupo */}
+      {/* Tarjetas Bento de cada grupo en Modo Claro */}
       <div className="space-y-3">
         {grupos.map((g) => {
           const prom = (g.sumaPuntajes / g.total).toFixed(1);
@@ -107,21 +106,21 @@ export const ResumenEjecutivoView: React.FC<ResumenEjecutivoProps> = ({
           const pBaj = ((g.bajo / g.total) * 100).toFixed(0);
 
           return (
-            <div key={g.nombre} className="bg-slate-900/90 border border-slate-800 p-3.5 rounded-2xl shadow-sm">
+            <div key={g.nombre} className="bg-white border border-slate-200/90 p-4 rounded-2xl shadow-sm">
               <div className="flex items-start justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-white">{g.nombre}</h3>
-                  <span className="text-xs text-slate-400">{g.total} dependencias evaluadas</span>
+                  <h3 className="text-sm font-bold text-slate-900">{g.nombre}</h3>
+                  <span className="text-xs text-slate-500 font-medium">{g.total} dependencias evaluadas</span>
                 </div>
                 <div className="text-right">
-                  <span className="text-sm font-extrabold text-white">{prom}</span>
-                  <span className="text-[10px] text-slate-400 block">promedio</span>
+                  <span className="text-sm font-black text-slate-900">{prom}</span>
+                  <span className="text-[10px] font-semibold text-slate-400 block">promedio</span>
                 </div>
               </div>
 
               {/* Barra de distribución porcentual */}
               <div className="mt-3">
-                <div className="w-full h-2.5 bg-slate-950 rounded-full overflow-hidden flex border border-slate-800">
+                <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden flex border border-slate-200">
                   {g.critico > 0 && (
                     <div style={{ width: `${pCrit}%` }} className="bg-rose-500 h-full" title={`Crítico: ${g.critico}`} />
                   )}
@@ -137,22 +136,22 @@ export const ResumenEjecutivoView: React.FC<ResumenEjecutivoProps> = ({
                 </div>
 
                 {/* Leyenda micro de conteo */}
-                <div className="mt-2 flex items-center justify-between text-[10px] text-slate-400">
+                <div className="mt-2.5 flex items-center justify-between text-[10px] text-slate-600 font-medium">
                   <span className="flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                    Crítico: <strong className="text-slate-200">{g.critico}</strong>
+                    <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+                    Crítico: <strong className="text-slate-900">{g.critico}</strong>
                   </span>
                   <span className="flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
-                    Alto: <strong className="text-slate-200">{g.alto}</strong>
+                    <span className="w-2 h-2 rounded-full bg-orange-500"></span>
+                    Alto: <strong className="text-slate-900">{g.alto}</strong>
                   </span>
                   <span className="flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                    Medio: <strong className="text-slate-200">{g.medio}</strong>
+                    <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                    Medio: <strong className="text-slate-900">{g.medio}</strong>
                   </span>
                   <span className="flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                    Óptimo: <strong className="text-slate-200">{g.bajo}</strong>
+                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    Óptimo: <strong className="text-slate-900">{g.bajo}</strong>
                   </span>
                 </div>
               </div>

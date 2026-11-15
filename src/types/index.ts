@@ -66,4 +66,4 @@ export interface DatasetIROJ {
   evaluaciones: EvaluacionItem[];
 }
 
-export type TabType = 'inicio' | 'dependencias' | 'ranking' | 'resumen';
+export type TabType = 'portada' | 'inicio' | 'cascada' | 'dependencias' | 'ranking' | 'resumen';

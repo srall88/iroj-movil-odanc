@@ -7,7 +7,25 @@
   body {
     overscroll-behavior-y: none;
     -webkit-font-smoothing: antialiased;
+    background-color: #f8fafc;
+    color: #0f172a;
   }
+}
+
+/* Background Patterns (ibelick / background-snippets) */
+.bg-grid-pattern {
+  background-size: 24px 24px;
+  background-image: linear-gradient(to right, rgba(226, 232, 240, 0.6) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(226, 232, 240, 0.6) 1px, transparent 1px);
+}
+
+.bg-dot-pattern {
+  background-size: 18px 18px;
+  background-image: radial-gradient(rgba(203, 213, 225, 0.75) 1px, transparent 1px);
+}
+
+.bg-aura-glow {
+  background: radial-gradient(100% 50% at 50% 0%, rgba(79, 70, 229, 0.08) 0%, rgba(248, 250, 252, 0) 70%);
 }
 
 /* Scrollbar invisible para carruseles táctiles */
@@ -30,7 +48,7 @@
 /* Animación de micro-luz de semáforo */
 @keyframes pulse-subtle {
   0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.6; transform: scale(0.95); }
+  50% { opacity: 0.55; transform: scale(0.92); }
 }
 
 .animate-micro-pulse {
