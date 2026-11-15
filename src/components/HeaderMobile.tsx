@@ -17,9 +17,9 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/90 px-4 pt-3 pb-3 safe-top shadow-xs transition-all">
       <div className="flex items-center justify-between gap-3 max-w-md mx-auto">
-        {/* Identidad Institucional Superior: ODANC LIMA ESTE + Logo.png */}
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-10 h-10 rounded-xl bg-white p-1 border border-slate-200/90 shadow-xs flex items-center justify-center shrink-0 overflow-hidden">
+        {/* Identidad Institucional Superior: Logo Transparente + ODANC LIMA ESTE */}
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-10 h-10 flex items-center justify-center shrink-0">
             <img 
               src="/Logo.png" 
               alt="Logo IROJ" 
