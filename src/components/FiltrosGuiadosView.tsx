@@ -31,11 +31,8 @@ export const FiltrosGuiadosView: React.FC<FiltrosGuiadosProps> = ({
   onConsultar,
   onSalir
 }) => {
-  // Conteo total real de órganos judiciales (por defecto 166)
-  const totalTotalOrganos = useMemo(() => {
-    const unicos = new Set(evaluacionesTotales.map(e => e.ndep));
-    return unicos.size > 0 ? unicos.size : 166;
-  }, [evaluacionesTotales]);
+  // Conteo oficial de órganos jurisdiccionales de Lima Este: estrictamente 166 según data oficial
+  const totalTotalOrganos = 166;
 
   // Estados de los 4 pasos
   const [distritoSel, setDistritoSel] = useState<string>('Ate');
