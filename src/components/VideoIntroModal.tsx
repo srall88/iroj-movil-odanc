@@ -8,20 +8,25 @@ interface VideoIntroModalProps {
 export const VideoIntroModal: React.FC<VideoIntroModalProps> = ({ onComplete }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [progreso, setProgreso] = useState<number>(0);
-  const [muted, setMuted] = useState<boolean>(true);
-  const [cargando, setCargando] = useState<boolean>(true);
+  const [muted, setMuted] = useState<boolean>(false);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    // Intentar reproducir automáticamente
-    video.play().catch(() => {
-      // Si el navegador bloquea autoplay con sonido, asegurar muted
-      video.muted = true;
-      setMuted(true);
-      video.play().catch(() => {});
-    });
+    video.volume = 1.0;
+    video.muted = false;
+
+    // Reproducir directamente con sonido abierto (el usuario acaba de hacer click en INGRESAR)
+    const playPromise = video.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(() => {
+        // Fallback únicamente si la política de autoplay del dispositivo exige iniciar en silencio
+        video.muted = true;
+        setMuted(true);
+        video.play().catch(() => {});
+      });
+    }
 
     const handleTimeUpdate = () => {
       if (video.duration && video.duration > 0) {
@@ -32,24 +37,17 @@ export const VideoIntroModal: React.FC<VideoIntroModalProps> = ({ onComplete }) 
 
     const handleEnded = () => {
       setProgreso(100);
-      // Breve pausa para ver la barra al 100% y avanzar
       setTimeout(() => {
         onComplete();
-      }, 350);
-    };
-
-    const handleCanPlay = () => {
-      setCargando(false);
+      }, 300);
     };
 
     video.addEventListener('timeupdate', handleTimeUpdate);
     video.addEventListener('ended', handleEnded);
-    video.addEventListener('canplay', handleCanPlay);
 
     return () => {
       video.removeEventListener('timeupdate', handleTimeUpdate);
       video.removeEventListener('ended', handleEnded);
-      video.removeEventListener('canplay', handleCanPlay);
     };
   }, [onComplete]);
 
@@ -61,28 +59,47 @@ export const VideoIntroModal: React.FC<VideoIntroModalProps> = ({ onComplete }) 
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black flex flex-col justify-between overflow-hidden select-none animate-fadeIn">
-      {/* 1. Header Flotante Superior */}
+    <div className="fixed inset-0 z-50 bg-black flex flex-col justify-between overflow-hidden select-none">
+      {/* 1. Video en Pantalla Completa Total (object-cover cubre toda la pantalla del celular sin franjas) */}
+      <video
+        ref={videoRef}
+        src="/imagenes/video-portada.mp4"
+        playsInline
+        autoPlay
+        muted={muted}
+        className="absolute inset-0 w-full h-full object-cover"
+        onError={(e) => {
+          const target = e.target as HTMLVideoElement;
+          if (!target.src.endsWith('/video-portada.mp4')) {
+            target.src = '/video-portada.mp4';
+          }
+        }}
+      />
+
+      {/* 2. Capa de Overlay Sutil para controles */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80 pointer-events-none" />
+
+      {/* 3. Header Flotante Superior */}
       <header className="relative z-20 px-4 pt-4 safe-top flex items-center justify-between">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-white text-[11px] font-bold">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/50 backdrop-blur-md border border-white/20 text-white text-[11px] font-bold">
           <ShieldCheck className="w-4 h-4 text-amber-400" />
-          <span>ODANC LIMA ESTE · IROJ</span>
+          <span>ODANC LIMA ESTE</span>
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Botón Mute / Unmute */}
+          {/* Botón Sonido */}
           <button
             onClick={toggleAudio}
-            className="w-9 h-9 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-white flex items-center justify-center active:scale-95"
+            className="w-9 h-9 rounded-full bg-black/50 backdrop-blur-md border border-white/20 text-white flex items-center justify-center active:scale-95 cursor-pointer"
             title="Activar / Silenciar sonido"
           >
             {muted ? <VolumeX className="w-4 h-4 text-white/80" /> : <Volume2 className="w-4 h-4 text-amber-400" />}
           </button>
 
-          {/* Botón Omitir Video */}
+          {/* Botón Omitir */}
           <button
             onClick={onComplete}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/30 text-white text-xs font-black tracking-wide active:scale-95 transition-all"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/30 text-white text-xs font-black tracking-wide active:scale-95 transition-all cursor-pointer"
           >
             <span>Omitir</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -90,54 +107,25 @@ export const VideoIntroModal: React.FC<VideoIntroModalProps> = ({ onComplete }) 
         </div>
       </header>
 
-      {/* 2. Video Central en Pantalla Completa */}
-      <div className="relative flex-1 flex items-center justify-center overflow-hidden my-auto">
-        <video
-          ref={videoRef}
-          src="/imagenes/video-portada.mp4"
-          playsInline
-          autoPlay
-          muted={muted}
-          className="w-full h-full max-h-[75vh] object-contain drop-shadow-2xl"
-          onError={(e) => {
-            // Fallback a ruta raíz si es necesario
-            const target = e.target as HTMLVideoElement;
-            if (!target.src.endsWith('/video-portada.mp4')) {
-              target.src = '/video-portada.mp4';
-            }
-          }}
-        />
-
-        {cargando && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-            <div className="w-10 h-10 border-4 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
-          </div>
-        )}
-      </div>
-
-      {/* 3. Barra de Progreso Sincronizada con el Video (Termina cuando termina el video) */}
-      <footer className="relative z-20 px-5 pb-6 safe-bottom space-y-2.5 bg-gradient-to-t from-black via-black/80 to-transparent pt-6">
-        <div className="flex items-center justify-between text-[11px] font-bold text-white/80">
-          <span className="flex items-center gap-1.5 text-amber-300">
+      {/* 4. Barra de Progreso Sincronizada con el Video (Termina al 100% cuando concluye el video) */}
+      <footer className="relative z-20 px-5 pb-6 safe-bottom space-y-2">
+        <div className="flex items-center justify-between text-[11px] font-bold text-white">
+          <span className="flex items-center gap-1.5 text-amber-300 drop-shadow-sm">
             <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-            <span>Presentación Institucional IROJ</span>
+            <span>Presentación IROJ 2026</span>
           </span>
-          <span className="tabular-nums font-mono">
+          <span className="tabular-nums font-mono drop-shadow-sm">
             {Math.round(progreso)}%
           </span>
         </div>
 
-        {/* Contenedor de la barra de progreso */}
-        <div className="w-full h-2 bg-white/20 rounded-full overflow-hidden p-0.5 border border-white/10 backdrop-blur-xs">
+        {/* Barra de progreso */}
+        <div className="w-full h-2 bg-white/25 rounded-full overflow-hidden p-0.5 border border-white/20 backdrop-blur-sm">
           <div
-            className="h-full bg-gradient-to-r from-amber-500 via-red-500 to-[#8B1E23] rounded-full transition-all duration-150 ease-out shadow-[0_0_12px_rgba(245,158,11,0.6)]"
+            className="h-full bg-gradient-to-r from-amber-400 via-orange-500 to-[#8B1E23] rounded-full transition-all duration-100 ease-linear shadow-[0_0_12px_rgba(245,158,11,0.8)]"
             style={{ width: `${progreso}%` }}
           />
         </div>
-
-        <p className="text-[10px] text-center text-white/60 font-medium">
-          El sistema ingresará automáticamente al concluir el video
-        </p>
       </footer>
     </div>
   );

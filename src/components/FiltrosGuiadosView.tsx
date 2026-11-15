@@ -121,21 +121,21 @@ export const FiltrosGuiadosView: React.FC<FiltrosGuiadosProps> = ({
   const puedeConsultar = distritoSel !== '' && sedeSel !== '' && organoSel !== null;
 
   return (
-    <div className="relative min-h-screen bg-slate-50 flex flex-col justify-between select-none">
-      {/* 1. Header Superior Compacto (Granate y Plomo) */}
-      <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 py-2 safe-top">
+    <div className="relative min-h-screen bg-slate-50 flex flex-col justify-start select-none">
+      {/* 1. Header Superior Compacto (Granate y Plomo, pegado arriba) */}
+      <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-slate-200 px-3 py-1.5 safe-top">
         <div className="flex items-center justify-between gap-2 max-w-md mx-auto">
           {/* Botón Izquierdo: Volver a Portada */}
           <button
             onClick={onSalir}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-300 text-xs font-bold text-slate-700 active:scale-95"
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-300 text-[11px] font-bold text-slate-700 active:scale-95"
           >
-            <ArrowLeft className="w-3.5 h-3.5" />
+            <ArrowLeft className="w-3 h-3" />
             <span>Inicio</span>
           </button>
 
           {/* Badge Central: ODANC LIMA ESTE */}
-          <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-red-50 border border-red-200 text-[#8B1E23] text-[11px] font-black">
+          <div className="inline-flex items-center gap-1 px-3 py-0.5 rounded-full bg-red-50 border border-red-200 text-[#8B1E23] text-[11px] font-black">
             <Scale className="w-3.5 h-3.5 text-[#8B1E23]" />
             <span>ODANC LIMA ESTE</span>
           </div>
@@ -143,16 +143,16 @@ export const FiltrosGuiadosView: React.FC<FiltrosGuiadosProps> = ({
           {/* Botón Derecho: Salir */}
           <button
             onClick={onSalir}
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-red-50 hover:bg-red-100 border border-red-200 text-xs font-bold text-[#8B1E23] active:scale-95"
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-50 hover:bg-red-100 border border-red-200 text-[11px] font-bold text-[#8B1E23] active:scale-95"
           >
-            <LogOut className="w-3.5 h-3.5" />
+            <LogOut className="w-3 h-3" />
             <span>Salir</span>
           </button>
         </div>
       </header>
 
-      {/* 2. Contenido de los Filtros Guiados (Ubicado más arriba, paleta Granate y Plomo) */}
-      <main className="px-4 pt-2.5 pb-24 space-y-3 max-w-md mx-auto w-full">
+      {/* 2. Contenido de los Filtros Guiados (Ubicado en la parte superior sin espacios vacíos) */}
+      <main className="px-3.5 pt-1.5 pb-24 space-y-2 max-w-md mx-auto w-full">
         {/* Título de la Sección + Total Real de Órganos Disponibles */}
         <div className="space-y-0.5">
           <div className="flex items-center justify-between">
