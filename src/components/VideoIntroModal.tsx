@@ -17,11 +17,11 @@ export const VideoIntroModal: React.FC<VideoIntroModalProps> = ({ onComplete }) 
     video.volume = 1.0;
     video.muted = false;
 
-    // Reproducir directamente con sonido abierto (el usuario acaba de hacer click en INGRESAR)
+    // Reproducción directa e inmediata sin botón de play
     const playPromise = video.play();
     if (playPromise !== undefined) {
       playPromise.catch(() => {
-        // Fallback únicamente si la política de autoplay del dispositivo exige iniciar en silencio
+        // En caso que el dispositivo requiera un primer toque para audio, continuar reproduciendo
         video.muted = true;
         setMuted(true);
         video.play().catch(() => {});
@@ -60,34 +60,32 @@ export const VideoIntroModal: React.FC<VideoIntroModalProps> = ({ onComplete }) 
 
   return (
     <div className="fixed inset-0 z-50 bg-black flex flex-col justify-between overflow-hidden select-none">
-      {/* 1. Video en Pantalla Completa Total (object-cover cubre toda la pantalla del celular sin franjas) */}
+      {/* 1. Video Oficial Nuevo en Pantalla Completa Absoluta (object-cover cubre 100% del alto y ancho) */}
       <video
         ref={videoRef}
-        src="/imagenes/video-portada.mp4"
         playsInline
         autoPlay
         muted={muted}
         className="absolute inset-0 w-full h-full object-cover"
-        onError={(e) => {
-          const target = e.target as HTMLVideoElement;
-          if (!target.src.endsWith('/video-portada.mp4')) {
-            target.src = '/video-portada.mp4';
-          }
-        }}
-      />
+      >
+        <source src="/video-logo.mp4" type="video/mp4" />
+        <source src="/imagenes/video-logo.mp4" type="video/mp4" />
+        <source src="/imagenes/video-portada.mp4" type="video/mp4" />
+        <source src="/video-portada.mp4" type="video/mp4" />
+      </video>
 
-      {/* 2. Capa de Overlay Sutil para controles */}
+      {/* 2. Capa de Gradiente Suave para visibilidad de texto superior e inferior */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80 pointer-events-none" />
 
       {/* 3. Header Flotante Superior */}
       <header className="relative z-20 px-4 pt-4 safe-top flex items-center justify-between">
         <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/50 backdrop-blur-md border border-white/20 text-white text-[11px] font-bold">
           <ShieldCheck className="w-4 h-4 text-amber-400" />
-          <span>ODANC LIMA ESTE</span>
+          <span>ODANC LIMA ESTE · IROJ</span>
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Botón Sonido */}
+          {/* Botón Activar / Silenciar Sonido */}
           <button
             onClick={toggleAudio}
             className="w-9 h-9 rounded-full bg-black/50 backdrop-blur-md border border-white/20 text-white flex items-center justify-center active:scale-95 cursor-pointer"
@@ -96,7 +94,7 @@ export const VideoIntroModal: React.FC<VideoIntroModalProps> = ({ onComplete }) 
             {muted ? <VolumeX className="w-4 h-4 text-white/80" /> : <Volume2 className="w-4 h-4 text-amber-400" />}
           </button>
 
-          {/* Botón Omitir */}
+          {/* Botón Omitir Video */}
           <button
             onClick={onComplete}
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/30 text-white text-xs font-black tracking-wide active:scale-95 transition-all cursor-pointer"
@@ -107,12 +105,12 @@ export const VideoIntroModal: React.FC<VideoIntroModalProps> = ({ onComplete }) 
         </div>
       </header>
 
-      {/* 4. Barra de Progreso Sincronizada con el Video (Termina al 100% cuando concluye el video) */}
+      {/* 4. Barra de Progreso Sincronizada que termina al 100% cuando concluye el video */}
       <footer className="relative z-20 px-5 pb-6 safe-bottom space-y-2">
         <div className="flex items-center justify-between text-[11px] font-bold text-white">
           <span className="flex items-center gap-1.5 text-amber-300 drop-shadow-sm">
             <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-            <span>Presentación IROJ 2026</span>
+            <span>Presentación Institucional IROJ</span>
           </span>
           <span className="tabular-nums font-mono drop-shadow-sm">
             {Math.round(progreso)}%
