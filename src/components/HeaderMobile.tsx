@@ -16,16 +16,21 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
 }) => {
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/90 px-4 pt-3 pb-3 safe-top shadow-xs transition-all">
-      <div className="flex items-center justify-between gap-2 max-w-md mx-auto">
-        {/* Identidad Institucional Superior: ODANC LIMA ESTE */}
+      <div className="flex items-center justify-between gap-3 max-w-md mx-auto">
+        {/* Identidad Institucional Superior: ODANC LIMA ESTE + Logo.png */}
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-10 h-10 rounded-xl bg-white p-1 border border-slate-200 shadow-xs flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-white p-1 border border-slate-200/90 shadow-xs flex items-center justify-center shrink-0 overflow-hidden">
             <img 
-              src="/imagenes/logo-iroj.jpg" 
+              src="/Logo.png" 
               alt="Logo IROJ" 
-              className="w-full h-full object-contain rounded-lg"
+              className="w-full h-full object-contain"
               onError={(e) => {
-                (e.target as HTMLImageElement).src = "/Logo IROJ.jpg";
+                const target = e.target as HTMLImageElement;
+                if (!target.src.endsWith('/logo.png')) {
+                  target.src = '/logo.png';
+                } else if (!target.src.endsWith('/imagenes/logo.png')) {
+                  target.src = '/imagenes/logo.png';
+                }
               }}
             />
           </div>
@@ -46,7 +51,7 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
           {mostrarVolver && onVolver ? (
             <button
               onClick={onVolver}
-              className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 active:scale-95 transition-all touch-target"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl border border-slate-200 active:scale-95 transition-all touch-target"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Filtros</span>
@@ -54,11 +59,11 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
           ) : (
             <button
               onClick={onSalir}
-              className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-rose-50 hover:text-rose-700 text-slate-600 font-bold text-xs rounded-xl border border-slate-200 active:scale-95 transition-all touch-target"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-rose-50 hover:text-rose-700 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 active:scale-95 transition-all touch-target"
               title="Salir a la portada"
             >
               <LogOut className="w-3.5 h-3.5" />
-              <span>{tituloAccion}</span>
+              <span>Salir</span>
             </button>
           )}
         </div>

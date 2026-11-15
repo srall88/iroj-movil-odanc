@@ -4,20 +4,31 @@
   "description": "Consulta del Índice de Rendimiento de Órganos Jurisdiccionales (IROJ) - ODANC Lima Este",
   "icons": [
     {
-      "src": "/imagenes/logo-iroj.jpg",
-      "type": "image/jpeg",
+      "src": "/Logo.png",
+      "type": "image/png",
       "sizes": "512x512",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon.svg",
-      "type": "image/svg+xml",
-      "sizes": "any",
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
       "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.ico",
+      "type": "image/x-icon",
+      "sizes": "64x64 32x32 24x24 16x16"
     }
   ],
   "start_url": "/",
-  "background_color": "#f8fafc",
+  "background_color": "#ffffff",
   "theme_color": "#ffffff",
   "display": "standalone",
   "orientation": "portrait-primary",
