@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E3A8A"/>
+      <stop offset="100%" stop-color="#0F172A"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#EF4444"/>
+      <stop offset="50%" stop-color="#F59E0B"/>
+      <stop offset="100%" stop-color="#10B981"/>
+    </linearGradient>
+  </defs>
+  <!-- Background Shield -->
+  <rect width="512" height="512" rx="128" fill="url(#bg)"/>
+  <rect x="16" y="16" width="480" height="480" rx="112" stroke="#334155" stroke-width="8" opacity="0.4"/>
+  
+  <!-- Scale / Judicial Balance Icon -->
+  <path d="M256 96V416M256 96H160M256 96H352" stroke="#FFFFFF" stroke-width="24" stroke-linecap="round"/>
+  <path d="M128 200L160 96L192 200C192 217.673 177.673 232 160 232C142.327 232 128 217.673 128 200Z" fill="#3B82F6" stroke="#FFFFFF" stroke-width="16"/>
+  <path d="M320 200L352 96L384 200C384 217.673 369.673 232 352 232C334.327 232 320 217.673 320 200Z" fill="#EF4444" stroke="#FFFFFF" stroke-width="16"/>
+  <path d="M160 416H352" stroke="#FFFFFF" stroke-width="28" stroke-linecap="round"/>
+  
+  <!-- Indicator Ring -->
+  <circle cx="256" cy="300" r="44" fill="#0F172A" stroke="url(#accent)" stroke-width="14"/>
+  <text x="256" y="308" text-anchor="middle" font-family="system-ui, sans-serif" font-size="24" font-weight="900" fill="#FFFFFF">IROJ</text>
+</svg>

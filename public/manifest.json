@@ -1,0 +1,19 @@
+{
+  "short_name": "IROJ Móvil",
+  "name": "IROJ - Corte Superior de Justicia de Lima Este",
+  "description": "Consulta de Índice de Riesgo de Órganos Jurisdiccionales (IROJ) - ODANC CSJLE",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0B1120",
+  "theme_color": "#1E3A8A",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "lang": "es-PE"
+}
