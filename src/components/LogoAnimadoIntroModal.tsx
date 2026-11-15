@@ -27,8 +27,8 @@ export const LogoAnimadoIntroModal: React.FC<LogoAnimadoIntroModalProps> = ({ on
       }
     }
 
-    // 2. Duración exacta de 6 segundos (6000 ms) solicitada
-    const duracionMs = 6000;
+    // 2. Duración exacta de 5 segundos (5000 ms) solicitada
+    const duracionMs = 5000;
     const intervaloMs = 35;
     const incremento = 100 / (duracionMs / intervaloMs);
 
@@ -124,7 +124,7 @@ export const LogoAnimadoIntroModal: React.FC<LogoAnimadoIntroModalProps> = ({ on
       {/* Espaciador central transparente (el logo cubre todo el fondo vertical) */}
       <div className="flex-1 pointer-events-none" />
 
-      {/* 3. Barra de Progreso Inferior Sincronizada a 6 Segundos */}
+      {/* 3. Barra de Progreso Inferior Sincronizada a 5 Segundos */}
       <footer className="relative z-20 px-6 pb-6 safe-bottom space-y-2 max-w-md mx-auto w-full">
         <div className="flex items-center justify-between text-[11px] font-bold text-white drop-shadow-md">
           <span className="flex items-center gap-2 text-amber-300">
@@ -136,7 +136,7 @@ export const LogoAnimadoIntroModal: React.FC<LogoAnimadoIntroModalProps> = ({ on
           </span>
         </div>
 
-        {/* Barra de carga de 6 segundos con resplandor */}
+        {/* Barra de carga de 5 segundos con resplandor */}
         <div className="w-full h-2.5 bg-black/60 rounded-full overflow-hidden p-0.5 border border-white/25 backdrop-blur-md shadow-inner">
           <div
             className="h-full bg-gradient-to-r from-amber-400 via-orange-500 to-[#8B1E23] rounded-full transition-all duration-75 ease-linear shadow-[0_0_16px_rgba(245,158,11,0.9)]"
