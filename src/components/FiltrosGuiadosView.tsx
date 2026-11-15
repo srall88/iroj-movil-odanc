@@ -6,10 +6,12 @@ import {
   Calendar, 
   Search, 
   ArrowRight, 
-  CheckCircle2,
-  Sparkles,
-  RotateCcw,
-  Check
+  Check, 
+  X, 
+  ArrowLeft,
+  LogOut,
+  ChevronRight,
+  RotateCcw
 } from 'lucide-react';
 import { EvaluacionItem } from '../types';
 
@@ -19,6 +21,7 @@ interface FiltrosGuiadosProps {
   meses: string[];
   anio: number;
   onConsultar: (ndep: number, mes: string) => void;
+  onSalir: () => void;
 }
 
 export const FiltrosGuiadosView: React.FC<FiltrosGuiadosProps> = ({
@@ -26,20 +29,22 @@ export const FiltrosGuiadosView: React.FC<FiltrosGuiadosProps> = ({
   distritos,
   meses,
   anio,
-  onConsultar
+  onConsultar,
+  onSalir
 }) => {
   // Estados de los 4 pasos
-  const [distritoSel, setDistritoSel] = useState<string>('');
-  const [sedeSel, setSedeSel] = useState<string>('');
-  const [organoSel, setOrganoSel] = useState<number | null>(null);
+  const [distritoSel, setDistritoSel] = useState<string>('Ate');
+  const [sedeSel, setSedeSel] = useState<string>('La merced');
+  const [organoSel, setOrganoSel] = useState<number | null>(7028);
   
   // Mes por defecto Octubre si existe
   const [mesSel, setMesSel] = useState<string>(
     meses.includes('OCTUBRE') ? 'OCTUBRE' : meses[meses.length - 1] || 'OCTUBRE'
   );
 
-  // Filtro de búsqueda rápida en el paso 3
-  const [busquedaOrgano, setBusquedaOrgano] = useState<string>('');
+  // Subventana interactiva abierta: 0 = ninguna, 1 = Distrito, 2 = Sede, 3 = Órgano, 4 = Mes
+  const [modalPaso, setModalPaso] = useState<number>(0);
+  const [busquedaModal, setBusquedaModal] = useState<string>('');
 
   // 1. Sedes disponibles para el distrito seleccionado
   const sedesDisponibles = useMemo(() => {
@@ -50,8 +55,22 @@ export const FiltrosGuiadosView: React.FC<FiltrosGuiadosProps> = ({
       const s = e.sede || 'Sede Principal';
       sMap.set(s, (sMap.get(s) || 0) + 1);
     }
-    return Array.from(sMap.keys()).sort();
-  }, [evaluacionesTotales, distritoSel]);
+    return Array.from(sMap.entries()).map(([nombre, cantidad]) => ({
+      nombre,
+      cantidad: Math.round(cantidad / Math.max(1, meses.length))
+    })).sort((a, b) => a.nombre.localeCompare(b.nombre));
+  }, [evaluacionesTotales, distritoSel, meses.length]);
+
+  // Conteo de órganos por distrito para la subventana del Paso 1 (Réplica Imagen 2)
+  const distritosConConteo = useMemo(() => {
+    return distritos.map(d => {
+      const unicos = new Set(evaluacionesTotales.filter(e => e.distrito === d).map(e => e.ndep));
+      return {
+        nombre: d,
+        cantidad: unicos.size
+      };
+    });
+  }, [distritos, evaluacionesTotales]);
 
   // 2. Órganos disponibles para la sede seleccionada
   const organosDisponibles = useMemo(() => {
@@ -72,282 +91,455 @@ export const FiltrosGuiadosView: React.FC<FiltrosGuiadosProps> = ({
       }
     }
 
-    let list = Array.from(organosMap.values());
+    return Array.from(organosMap.values()).sort((a, b) => a.ndep - b.ndep);
+  }, [evaluacionesTotales, distritoSel, sedeSel]);
 
-    if (busquedaOrgano.trim()) {
-      const q = busquedaOrgano.toLowerCase().trim();
-      list = list.filter(o => 
-        o.dependencia.toLowerCase().includes(q) || 
-        o.ndep.toString().includes(q) ||
-        (o.especialidad && o.especialidad.toLowerCase().includes(q))
-      );
+  // Si no se encuentra seleccionado por defecto, tomar el primero
+  React.useEffect(() => {
+    if (distritoSel && sedesDisponibles.length > 0 && !sedeSel) {
+      setSedeSel(sedesDisponibles[0].nombre);
     }
+  }, [distritoSel, sedesDisponibles, sedeSel]);
 
-    return list.sort((a, b) => a.ndep - b.ndep);
-  }, [evaluacionesTotales, distritoSel, sedeSel, busquedaOrgano]);
+  React.useEffect(() => {
+    if (sedeSel && organosDisponibles.length > 0 && organoSel === null) {
+      setOrganoSel(organosDisponibles[0].ndep);
+    }
+  }, [sedeSel, organosDisponibles, organoSel]);
+
+  // Total de órganos disponibles según filtro
+  const totalOrganosDisponibles = useMemo(() => {
+    if (sedeSel) return organosDisponibles.length;
+    if (distritoSel) {
+      return new Set(evaluacionesTotales.filter(e => e.distrito === distritoSel).map(e => e.ndep)).size;
+    }
+    return new Set(evaluacionesTotales.map(e => e.ndep)).size;
+  }, [evaluacionesTotales, distritoSel, sedeSel, organosDisponibles]);
+
+  // Órgano seleccionado objeto
+  const organoSeleccionadoObj = useMemo(() => {
+    if (organoSel === null) return null;
+    return evaluacionesTotales.find(e => e.ndep === organoSel);
+  }, [evaluacionesTotales, organoSel]);
 
   const handleReset = () => {
     setDistritoSel('');
     setSedeSel('');
     setOrganoSel(null);
-    setBusquedaOrgano('');
   };
 
   const puedeConsultar = distritoSel !== '' && sedeSel !== '' && organoSel !== null;
 
-  // Cálculo de progreso
-  const pasoProgreso = (distritoSel ? 1 : 0) + (sedeSel ? 1 : 0) + (organoSel !== null ? 1 : 0) + (mesSel ? 1 : 0);
-
   return (
-    <div className="px-4 py-4 space-y-4 max-w-md mx-auto select-none">
-      {/* Título de la sección de Filtros Guiados con barra de progreso */}
-      <div className="space-y-2 pb-1">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-black text-slate-900 tracking-tight">
+    <div className="relative min-h-screen bg-slate-50 flex flex-col justify-between select-none">
+      {/* 1. Header Superior (Réplica Imagen 3) */}
+      <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-slate-200/90 px-4 py-3 safe-top">
+        <div className="flex items-center justify-between gap-2 max-w-md mx-auto">
+          {/* Botón Izquierdo: Volver a Portada */}
+          <button
+            onClick={onSalir}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-slate-200 shadow-2xs text-xs font-bold text-slate-700 active:scale-95"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Inicio</span>
+          </button>
+
+          {/* Badge Central: ODANC LIMA ESTE */}
+          <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-sky-50 border border-sky-200/80 text-sky-800 text-[11px] font-bold">
+            <Scale className="w-3.5 h-3.5 text-sky-700" />
+            <span>ODANC (Lima Este)</span>
+          </div>
+
+          {/* Botón Derecho: Salir */}
+          <button
+            onClick={onSalir}
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-red-50 border border-red-200/80 text-xs font-bold text-red-600 hover:bg-red-100 active:scale-95"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Salir</span>
+          </button>
+        </div>
+      </header>
+
+      {/* 2. Contenido de los Filtros Guiados (Réplica Imagen 3) */}
+      <main className="px-4 pt-4 pb-28 space-y-4 max-w-md mx-auto w-full">
+        {/* Título de la Sección + Badge de Órganos Disponibles */}
+        <div className="space-y-1">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">
               Filtros Guiados
-            </h2>
-            <p className="text-xs text-slate-500 font-medium">
-              Completa los 4 pasos para consultar el indicador IROJ
-            </p>
-          </div>
-          {(distritoSel || sedeSel || organoSel) && (
-            <button
-              onClick={handleReset}
-              className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 active:scale-95"
-            >
-              <RotateCcw className="w-3.5 h-3.5" /> Limpiar
-            </button>
-          )}
-        </div>
-
-        {/* Micro Barra de Progreso de 4 Pasos */}
-        <div className="flex items-center gap-1.5 pt-1">
-          {[1, 2, 3, 4].map((step) => {
-            const isDone = step <= pasoProgreso;
-            return (
-              <div 
-                key={step} 
-                className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
-                  isDone ? 'bg-indigo-600' : 'bg-slate-200'
-                }`}
-              />
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Contenedor de Pasos */}
-      <div className="space-y-3">
-        {/* ========================================================== */}
-        {/* PASO 1: SELECCIONAR DISTRITO                              */}
-        {/* ========================================================== */}
-        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs space-y-2.5">
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-extrabold text-slate-800 flex items-center gap-2">
-              <span className={`w-5 h-5 rounded-full text-[11px] font-black flex items-center justify-center shrink-0 ${
-                distritoSel ? 'bg-emerald-600 text-white' : 'bg-indigo-600 text-white'
-              }`}>
-                {distritoSel ? <Check className="w-3 h-3" /> : '1'}
-              </span>
-              <MapPin className="w-4 h-4 text-indigo-600" />
-              <span>Paso 1: Distrito Judicial</span>
-            </label>
-            {distritoSel && (
-              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-                Seleccionado
-              </span>
-            )}
-          </div>
-
-          <select
-            value={distritoSel}
-            onChange={(e) => {
-              setDistritoSel(e.target.value);
-              setSedeSel('');
-              setOrganoSel(null);
-            }}
-            className="w-full py-3 px-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all cursor-pointer"
-          >
-            <option value="">-- Selecciona el Distrito Judicial --</option>
-            {distritos.map((dist) => (
-              <option key={dist} value={dist}>
-                {dist}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* ========================================================== */}
-        {/* PASO 2: SEDE JUDICIAL                                     */}
-        {/* ========================================================== */}
-        <div className={`bg-white border rounded-2xl p-4 shadow-xs space-y-2.5 transition-all ${
-          distritoSel ? 'border-slate-200/90 opacity-100' : 'border-slate-200/50 opacity-60 pointer-events-none'
-        }`}>
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-extrabold text-slate-800 flex items-center gap-2">
-              <span className={`w-5 h-5 rounded-full text-[11px] font-black flex items-center justify-center shrink-0 ${
-                sedeSel ? 'bg-emerald-600 text-white' : distritoSel ? 'bg-indigo-600 text-white' : 'bg-slate-300 text-slate-600'
-              }`}>
-                {sedeSel ? <Check className="w-3 h-3" /> : '2'}
-              </span>
-              <Building2 className="w-4 h-4 text-indigo-600" />
-              <span>Paso 2: Sede Judicial</span>
-            </label>
-            {sedeSel && (
-              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-                Seleccionada
-              </span>
-            )}
-          </div>
-
-          <select
-            value={sedeSel}
-            onChange={(e) => {
-              setSedeSel(e.target.value);
-              setOrganoSel(null);
-            }}
-            disabled={!distritoSel}
-            className="w-full py-3 px-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all cursor-pointer disabled:bg-slate-100 disabled:text-slate-400"
-          >
-            <option value="">
-              {distritoSel ? '-- Selecciona la Sede Judicial --' : 'Primero selecciona el distrito'}
-            </option>
-            {sedesDisponibles.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* ========================================================== */}
-        {/* PASO 3: ÓRGANO JURISDICCIONAL                             */}
-        {/* ========================================================== */}
-        <div className={`bg-white border rounded-2xl p-4 shadow-xs space-y-2.5 transition-all ${
-          sedeSel ? 'border-slate-200/90 opacity-100' : 'border-slate-200/50 opacity-60 pointer-events-none'
-        }`}>
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-extrabold text-slate-800 flex items-center gap-2">
-              <span className={`w-5 h-5 rounded-full text-[11px] font-black flex items-center justify-center shrink-0 ${
-                organoSel !== null ? 'bg-emerald-600 text-white' : sedeSel ? 'bg-indigo-600 text-white' : 'bg-slate-300 text-slate-600'
-              }`}>
-                {organoSel !== null ? <Check className="w-3 h-3" /> : '3'}
-              </span>
-              <Scale className="w-4 h-4 text-indigo-600" />
-              <span>Paso 3: Órgano Jurisdiccional</span>
-            </label>
-            {organosDisponibles.length > 0 && (
-              <span className="text-[10px] text-slate-500 font-bold">
-                {organosDisponibles.length} órganos
-              </span>
-            )}
-          </div>
-
-          {sedeSel && organosDisponibles.length > 3 && (
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-              <input
-                type="text"
-                value={busquedaOrgano}
-                onChange={(e) => setBusquedaOrgano(e.target.value)}
-                placeholder="Buscar por nombre o NDEP..."
-                className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              />
-            </div>
-          )}
-
-          <select
-            value={organoSel !== null ? organoSel.toString() : ''}
-            onChange={(e) => setOrganoSel(e.target.value ? Number(e.target.value) : null)}
-            disabled={!sedeSel}
-            className="w-full py-3 px-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all cursor-pointer disabled:bg-slate-100 disabled:text-slate-400"
-          >
-            <option value="">
-              {sedeSel ? '-- Elige el Juzgado o Sala --' : 'Primero selecciona la sede'}
-            </option>
-            {organosDisponibles.map((o) => (
-              <option key={o.ndep} value={o.ndep}>
-                [NDEP {o.ndep}] {o.dependencia}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* ========================================================== */}
-        {/* PASO 4: MES DE EVALUACIÓN                                 */}
-        {/* ========================================================== */}
-        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs space-y-2.5">
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-extrabold text-slate-800 flex items-center gap-2">
-              <span className="w-5 h-5 rounded-full bg-emerald-600 text-white text-[11px] font-black flex items-center justify-center shrink-0">
-                <Check className="w-3 h-3" />
-              </span>
-              <Calendar className="w-4 h-4 text-indigo-600" />
-              <span>Paso 4: Mes de Evaluación</span>
-            </label>
-            <span className="text-xs font-black text-slate-900 uppercase">
-              {mesSel} {anio}
+            </h1>
+            <span className="px-3 py-1 rounded-full bg-sky-50 border border-sky-200 text-sky-800 text-[11px] font-extrabold shadow-2xs">
+              {totalOrganosDisponibles} Órganos disponibles
             </span>
           </div>
+          <p className="text-xs text-slate-500 font-medium">
+            Toque cada paso para abrir su selector interactivo en subventana:
+          </p>
+        </div>
 
-          <div className="grid grid-cols-4 gap-1.5">
-            {meses.map((m) => {
-              const isSelected = m.toUpperCase() === mesSel.toUpperCase();
-              return (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => setMesSel(m)}
-                  className={`py-2 px-1 text-xs font-extrabold rounded-xl border capitalize transition-all active:scale-95 text-center ${
-                    isSelected
-                      ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
-                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  {m.toLowerCase()}
-                </button>
-              );
-            })}
+        {/* Tarjetas de los 4 Pasos (Réplica exacta Imagen 3) */}
+        <div className="space-y-3 pt-1">
+          {/* ========================================================== */}
+          {/* PASO 1: DISTRITO JUDICIAL                                  */}
+          {/* ========================================================== */}
+          <div
+            onClick={() => {
+              setBusquedaModal('');
+              setModalPaso(1);
+            }}
+            className="bg-white border-2 border-sky-500/80 rounded-2xl p-4 shadow-sm flex items-center justify-between cursor-pointer active:scale-[0.99] transition-all"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-red-500 text-lg shrink-0">
+                📍
+              </div>
+              <div className="min-w-0">
+                <span className="text-[11px] font-black uppercase tracking-wider text-sky-600 block">
+                  PASO 1: DISTRITO JUDICIAL
+                </span>
+                <span className="text-base font-black text-slate-900 block truncate">
+                  {distritoSel || '-- Seleccione Distrito --'}
+                </span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-emerald-500/80 bg-emerald-50 text-emerald-700 text-xs font-extrabold shrink-0"
+            >
+              <Check className="w-3.5 h-3.5" />
+              <span>Cambiar</span>
+            </button>
           </div>
+
+          {/* ========================================================== */}
+          {/* PASO 2: SEDE JUDICIAL                                      */}
+          {/* ========================================================== */}
+          <div
+            onClick={() => {
+              if (distritoSel) {
+                setBusquedaModal('');
+                setModalPaso(2);
+              }
+            }}
+            className={`bg-white border-2 rounded-2xl p-4 shadow-sm flex items-center justify-between cursor-pointer active:scale-[0.99] transition-all ${
+              distritoSel ? 'border-sky-500/80' : 'border-slate-200 opacity-60'
+            }`}
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-lg shrink-0">
+                🏢
+              </div>
+              <div className="min-w-0">
+                <span className="text-[11px] font-black uppercase tracking-wider text-sky-600 block">
+                  PASO 2: SEDE JUDICIAL
+                </span>
+                <span className="text-base font-black text-slate-900 block truncate">
+                  {sedeSel || '-- Seleccione Sede --'}
+                </span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-emerald-500/80 bg-emerald-50 text-emerald-700 text-xs font-extrabold shrink-0"
+            >
+              <Check className="w-3.5 h-3.5" />
+              <span>Cambiar</span>
+            </button>
+          </div>
+
+          {/* ========================================================== */}
+          {/* PASO 3: ÓRGANO JURISDICCIONAL                              */}
+          {/* ========================================================== */}
+          <div
+            onClick={() => {
+              if (sedeSel) {
+                setBusquedaModal('');
+                setModalPaso(3);
+              }
+            }}
+            className={`bg-white border-2 rounded-2xl p-4 shadow-sm flex items-center justify-between cursor-pointer active:scale-[0.99] transition-all ${
+              sedeSel ? 'border-purple-500/80' : 'border-slate-200 opacity-60'
+            }`}
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-lg shrink-0">
+                ⚖
+              </div>
+              <div className="min-w-0">
+                <span className="text-[11px] font-black uppercase tracking-wider text-purple-600 block">
+                  PASO 3: ÓRGANO JURISDICCIONAL
+                </span>
+                <span className="text-sm font-black text-slate-900 block truncate">
+                  {organoSeleccionadoObj ? organoSeleccionadoObj.dependencia : '-- Seleccione Órgano --'}
+                </span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-emerald-500/80 bg-emerald-50 text-emerald-700 text-xs font-extrabold shrink-0"
+            >
+              <Check className="w-3.5 h-3.5" />
+              <span>Cambiar</span>
+            </button>
+          </div>
+
+          {/* ========================================================== */}
+          {/* PASO 4: MES DE EVALUACIÓN (2026)                           */}
+          {/* ========================================================== */}
+          <div
+            onClick={() => {
+              setBusquedaModal('');
+              setModalPaso(4);
+            }}
+            className="bg-white border-2 border-purple-500/80 rounded-2xl p-4 shadow-sm flex items-center justify-between cursor-pointer active:scale-[0.99] transition-all"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-lg shrink-0">
+                📅
+              </div>
+              <div className="min-w-0">
+                <span className="text-[11px] font-black uppercase tracking-wider text-purple-600 block">
+                  PASO 4: MES DE EVALUACIÓN ({anio})
+                </span>
+                <span className="text-base font-black text-slate-900 block capitalize">
+                  {mesSel.toLowerCase()}
+                </span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-emerald-500/80 bg-emerald-50 text-emerald-700 text-xs font-extrabold shrink-0"
+            >
+              <Check className="w-3.5 h-3.5" />
+              <span>Cambiar</span>
+            </button>
+          </div>
+        </div>
+      </main>
+
+      {/* 3. Botón Fijo Inferior: CONSULTAR INDICADORES (Réplica Imagen 3) */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t border-slate-200/90 z-20 safe-bottom">
+        <div className="max-w-md mx-auto">
+          <button
+            onClick={() => {
+              if (organoSel !== null) {
+                onConsultar(organoSel, mesSel);
+              }
+            }}
+            disabled={!puedeConsultar}
+            className={`w-full py-4 px-6 rounded-2xl font-black text-sm tracking-wide shadow-lg flex items-center justify-center gap-2 active:scale-[0.98] transition-all ${
+              puedeConsultar
+                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-blue-500/30 cursor-pointer'
+                : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
+            }`}
+          >
+            <span>CONSULTAR INDICADORES</span>
+            <span className="text-lg">📊</span>
+          </button>
         </div>
       </div>
 
-      {/* Botón Principal: Consultar Indicadores (Natural Reach / Thumb Zone) */}
-      <div className="pt-2">
-        <button
-          onClick={() => {
-            if (organoSel !== null) {
-              onConsultar(organoSel, mesSel);
-            }
-          }}
-          disabled={!puedeConsultar}
-          className={`w-full flex items-center justify-center gap-2 py-4 px-6 font-black text-sm rounded-2xl shadow-md active:scale-[0.98] transition-all touch-target ${
-            puedeConsultar
-              ? 'bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 hover:from-slate-800 hover:to-indigo-900 text-white cursor-pointer shadow-slate-900/20'
-              : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
-          }`}
-        >
-          <span>CONSULTAR INDICADORES</span>
-          <ArrowRight className="w-4 h-4 text-amber-400" />
-        </button>
+      {/* ========================================================== */}
+      {/* 4. SUBVENTANA INTERACTIVA MODAL / BOTTOM SHEET (Imagen 2) */}
+      {/* ========================================================== */}
+      {modalPaso > 0 && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/50 backdrop-blur-xs transition-opacity animate-fadeIn">
+          <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl animate-slideUp">
+            {/* Header del Modal (Réplica Imagen 2) */}
+            <div className="px-5 pt-5 pb-3 border-b border-slate-100 flex items-start justify-between">
+              <div>
+                <span className="text-[11px] font-black uppercase tracking-wider text-sky-600 block">
+                  PASO {modalPaso} DE 4
+                </span>
+                <h3 className="text-lg font-black text-slate-900 leading-snug">
+                  {modalPaso === 1 && 'Seleccione Distrito Judicial'}
+                  {modalPaso === 2 && 'Seleccione Sede Judicial'}
+                  {modalPaso === 3 && 'Seleccione Órgano Jurisdiccional'}
+                  {modalPaso === 4 && `Seleccione Mes de Evaluación (${anio})`}
+                </h3>
+              </div>
 
-        {!puedeConsultar && (
-          <p className="text-[11px] text-center text-slate-400 font-medium mt-2">
-            Completa los 3 primeros pasos para consultar el IROJ.
-          </p>
-        )}
-      </div>
+              <button
+                onClick={() => setModalPaso(0)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center shrink-0 active:scale-95"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
 
-      {/* Pie de Página Institucional */}
-      <footer className="text-center pt-6 pb-2 border-t border-slate-200/80">
-        <p className="text-xs font-bold text-slate-800 tracking-tight">
-          Corte Superior de Justicia de Lima Este
-        </p>
-        <p className="text-[10px] text-slate-400 mt-0.5">
-          ODANC · Oficina Descentralizada de la Autoridad Nacional de Control
-        </p>
-      </footer>
+            {/* Buscador interno si hay más de 4 opciones */}
+            {(modalPaso === 3 || (modalPaso === 2 && sedesDisponibles.length > 4)) && (
+              <div className="px-4 py-2 border-b border-slate-100 bg-slate-50/50">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="text"
+                    value={busquedaModal}
+                    onChange={(e) => setBusquedaModal(e.target.value)}
+                    placeholder="Filtrar por nombre o código..."
+                    className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Lista de Opciones como Tarjetas (Réplica Imagen 2) */}
+            <div className="p-4 space-y-2.5 overflow-y-auto flex-1 overscroll-contain">
+              {/* PASO 1: DISTRITOS */}
+              {modalPaso === 1 && (
+                distritosConConteo.map((item) => {
+                  const isSelected = item.nombre === distritoSel;
+                  return (
+                    <div
+                      key={item.nombre}
+                      onClick={() => {
+                        setDistritoSel(item.nombre);
+                        setSedeSel('');
+                        setOrganoSel(null);
+                        setModalPaso(2); // Auto-avanzar al paso 2
+                      }}
+                      className={`p-3.5 rounded-2xl border flex items-center justify-between cursor-pointer transition-all active:scale-[0.99] ${
+                        isSelected
+                          ? 'border-2 border-sky-600 bg-sky-50/80 shadow-xs'
+                          : 'border-slate-200/90 hover:bg-slate-50 bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-base">📍</span>
+                        <span className={`text-sm font-extrabold ${isSelected ? 'text-sky-950 font-black' : 'text-slate-900'}`}>
+                          {item.nombre}
+                        </span>
+                      </div>
+                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                        isSelected ? 'bg-sky-600 text-white' : 'bg-sky-50 text-sky-700'
+                      }`}>
+                        {item.cantidad} órganos
+                      </span>
+                    </div>
+                  );
+                })
+              )}
+
+              {/* PASO 2: SEDES */}
+              {modalPaso === 2 && (
+                sedesDisponibles
+                  .filter(s => s.nombre.toLowerCase().includes(busquedaModal.toLowerCase()))
+                  .map((item) => {
+                    const isSelected = item.nombre === sedeSel;
+                    return (
+                      <div
+                        key={item.nombre}
+                        onClick={() => {
+                          setSedeSel(item.nombre);
+                          setOrganoSel(null);
+                          setModalPaso(3); // Auto-avanzar al paso 3
+                        }}
+                        className={`p-3.5 rounded-2xl border flex items-center justify-between cursor-pointer transition-all active:scale-[0.99] ${
+                          isSelected
+                            ? 'border-2 border-sky-600 bg-sky-50/80 shadow-xs'
+                            : 'border-slate-200/90 hover:bg-slate-50 bg-white'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <span className="text-base">🏢</span>
+                          <span className={`text-sm font-extrabold ${isSelected ? 'text-sky-950 font-black' : 'text-slate-900'}`}>
+                            {item.nombre}
+                          </span>
+                        </div>
+                        <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                          isSelected ? 'bg-sky-600 text-white' : 'bg-sky-50 text-sky-700'
+                        }`}>
+                          {item.cantidad} órganos
+                        </span>
+                      </div>
+                    );
+                  })
+              )}
+
+              {/* PASO 3: ÓRGANOS */}
+              {modalPaso === 3 && (
+                organosDisponibles
+                  .filter(o => 
+                    o.dependencia.toLowerCase().includes(busquedaModal.toLowerCase()) ||
+                    o.ndep.toString().includes(busquedaModal)
+                  )
+                  .map((item) => {
+                    const isSelected = item.ndep === organoSel;
+                    return (
+                      <div
+                        key={item.ndep}
+                        onClick={() => {
+                          setOrganoSel(item.ndep);
+                          setModalPaso(0); // Cerrar y listo para consultar
+                        }}
+                        className={`p-3.5 rounded-2xl border flex items-center justify-between cursor-pointer transition-all active:scale-[0.99] ${
+                          isSelected
+                            ? 'border-2 border-purple-600 bg-purple-50/80 shadow-xs'
+                            : 'border-slate-200/90 hover:bg-slate-50 bg-white'
+                        }`}
+                      >
+                        <div className="flex items-start gap-2.5 min-w-0 pr-2">
+                          <span className="text-base mt-0.5">⚖</span>
+                          <div className="min-w-0">
+                            <span className={`text-xs font-black block leading-snug ${isSelected ? 'text-purple-950' : 'text-slate-900'}`}>
+                              {item.dependencia}
+                            </span>
+                            {item.especialidad && (
+                              <span className="text-[10px] font-bold text-slate-500 block mt-0.5">
+                                {item.especialidad}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <span className={`text-[11px] font-extrabold px-2 py-0.5 rounded-md shrink-0 ${
+                          isSelected ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-700'
+                        }`}>
+                          Cód: {item.ndep}
+                        </span>
+                      </div>
+                    );
+                  })
+              )}
+
+              {/* PASO 4: MESES */}
+              {modalPaso === 4 && (
+                meses.map((m) => {
+                  const isSelected = m.toUpperCase() === mesSel.toUpperCase();
+                  return (
+                    <div
+                      key={m}
+                      onClick={() => {
+                        setMesSel(m);
+                        setModalPaso(0);
+                      }}
+                      className={`p-3.5 rounded-2xl border flex items-center justify-between cursor-pointer transition-all active:scale-[0.99] ${
+                        isSelected
+                          ? 'border-2 border-purple-600 bg-purple-50/80 shadow-xs'
+                          : 'border-slate-200/90 hover:bg-slate-50 bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-base">📅</span>
+                        <span className={`text-sm font-extrabold capitalize ${isSelected ? 'text-purple-950 font-black' : 'text-slate-900'}`}>
+                          {m.toLowerCase()} {anio}
+                        </span>
+                      </div>
+                      {isSelected && (
+                        <Check className="w-4 h-4 text-purple-600" />
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

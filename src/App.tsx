@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import datasetRaw from './data/consultasData.json';
 import { DatasetIROJ, EvaluacionItem, PantallaType } from './types';
-import { HeaderMobile } from './components/HeaderMobile';
 import { PortadaLanding } from './components/PortadaLanding';
 import { FiltrosGuiadosView } from './components/FiltrosGuiadosView';
 import { FichaIndicadoresView } from './components/FichaIndicadoresView';
@@ -16,7 +15,7 @@ export default function App() {
   const mesesDisponibles = dataset.meses || ['OCTUBRE', 'AGOSTO', 'MAYO', 'MARZO'];
   
   // Selección actual
-  const [ndepSeleccionado, setNdepSeleccionado] = useState<number | null>(null);
+  const [ndepSeleccionado, setNdepSeleccionado] = useState<number | null>(7028);
   const [mesSeleccionado, setMesSeleccionado] = useState<string>(
     mesesDisponibles.includes('OCTUBRE') ? 'OCTUBRE' : mesesDisponibles[0]
   );
@@ -63,11 +62,10 @@ export default function App() {
   return (
     <div className="relative min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-indigo-600 selection:text-white overflow-x-hidden">
       {/* Background Snippet (ibelick - Grid + Aura glow) */}
-      <div className="fixed inset-0 bg-grid-pattern opacity-40 pointer-events-none -z-10"></div>
-      <div className="fixed top-0 left-0 right-0 h-96 bg-aura-glow pointer-events-none -z-10"></div>
+      <div className="fixed inset-0 bg-grid-pattern opacity-30 pointer-events-none -z-10"></div>
 
       {/* ============================================================ */}
-      {/* 1. PANTALLA: PORTADA DE ENTRADA                              */}
+      {/* 1. PANTALLA: PORTADA DE ENTRADA (Réplica Imagen 4)           */}
       {/* ============================================================ */}
       {pantalla === 'portada' && (
         <PortadaLanding
@@ -83,55 +81,42 @@ export default function App() {
       )}
 
       {/* ============================================================ */}
-      {/* 2. PANTALLA: FILTROS GUIADOS (Paso 1, 2, 3, 4)               */}
+      {/* 2. PANTALLA: FILTROS GUIADOS (Réplica Imagen 3 y 2)          */}
       {/* ============================================================ */}
       {pantalla === 'filtros' && (
-        <>
-          <HeaderMobile
-            onSalir={() => setPantalla('portada')}
-            tituloAccion="Salir"
-          />
-          <main className="flex-1 pb-10">
-            <FiltrosGuiadosView
-              evaluacionesTotales={dataset.evaluaciones || []}
-              distritos={dataset.distritos || []}
-              meses={mesesDisponibles}
-              anio={dataset.anio_predeterminado || 2026}
-              onConsultar={handleConsultar}
-            />
-          </main>
-        </>
-      )}
-
-      {/* ============================================================ */}
-      {/* 3. PANTALLA: FICHA DE INDICADORES IROJ                       */}
-      {/* ============================================================ */}
-      {pantalla === 'ficha' && evaluacionActual && (
-        <>
-          <HeaderMobile
-            onSalir={() => setPantalla('portada')}
-            tituloAccion="Salir"
-            mostrarVolver={true}
-            onVolver={() => {
-              setPantalla('filtros');
+        <main className="flex-1">
+          <FiltrosGuiadosView
+            evaluacionesTotales={dataset.evaluaciones || []}
+            distritos={dataset.distritos || []}
+            meses={mesesDisponibles}
+            anio={dataset.anio_predeterminado || 2026}
+            onConsultar={handleConsultar}
+            onSalir={() => {
+              setPantalla('portada');
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
           />
-          <main className="flex-1 pb-10">
-            <FichaIndicadoresView
-              evaluacionActual={evaluacionActual}
-              mesesDisponibles={mesesDisponibles}
-              mesActivo={mesSeleccionado}
-              anio={dataset.anio_predeterminado || 2026}
-              onCambiarMes={(m) => setMesSeleccionado(m)}
-              onVolverFiltros={() => {
-                setPantalla('filtros');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              historialMeses={historialOrgano}
-            />
-          </main>
-        </>
+        </main>
+      )}
+
+      {/* ============================================================ */}
+      {/* 3. PANTALLA: FICHA DE INDICADORES IROJ (Réplica Imagen 1)    */}
+      {/* ============================================================ */}
+      {pantalla === 'ficha' && evaluacionActual && (
+        <main className="flex-1">
+          <FichaIndicadoresView
+            evaluacionActual={evaluacionActual}
+            mesesDisponibles={mesesDisponibles}
+            mesActivo={mesSeleccionado}
+            anio={dataset.anio_predeterminado || 2026}
+            onCambiarMes={(m) => setMesSeleccionado(m)}
+            onVolverFiltros={() => {
+              setPantalla('filtros');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            historialMeses={historialOrgano}
+          />
+        </main>
       )}
     </div>
   );
