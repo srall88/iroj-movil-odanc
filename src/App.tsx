@@ -4,14 +4,20 @@ import { DatasetIROJ, EvaluacionItem, PantallaType } from './types';
 import { PortadaLanding } from './components/PortadaLanding';
 import { FiltrosGuiadosView } from './components/FiltrosGuiadosView';
 import { FichaIndicadoresView } from './components/FichaIndicadoresView';
-
-const dataset = datasetRaw as unknown as DatasetIROJ;
+import { VideoIntroModal } from './components/VideoIntroModal';
+import { PullToRefresh } from './components/PullToRefresh';
 
 export default function App() {
+  // Datos reactivos que pueden actualizarse al jalar hacia abajo
+  const [dataset, setDataset] = useState<DatasetIROJ>(datasetRaw as unknown as DatasetIROJ);
+
   // Estado de navegación: 'portada' | 'filtros' | 'ficha'
   const [pantalla, setPantalla] = useState<PantallaType>('portada');
 
-  // Meses disponibles (ordenados y con OCTUBRE como predeterminado)
+  // Estado para reproducir el video de bienvenida con barra de progreso
+  const [mostrarVideo, setMostrarVideo] = useState<boolean>(false);
+
+  // Meses disponibles
   const mesesDisponibles = dataset.meses || ['OCTUBRE', 'AGOSTO', 'MAYO', 'MARZO'];
   
   // Selección actual
@@ -20,7 +26,7 @@ export default function App() {
     mesesDisponibles.includes('OCTUBRE') ? 'OCTUBRE' : mesesDisponibles[0]
   );
 
-  // Mapa de evaluaciones por NDEP para acceso y evolución histórica
+  // Mapa de evaluaciones por NDEP para acceso y evolución
   const evaluacionesPorOrgano = useMemo(() => {
     const mapa = new Map<number, EvaluacionItem[]>();
     for (const ev of dataset.evaluaciones || []) {
@@ -30,9 +36,9 @@ export default function App() {
       mapa.get(ev.ndep)!.push(ev);
     }
     return mapa;
-  }, []);
+  }, [dataset]);
 
-  // Evaluación activa que se está visualizando
+  // Evaluación activa
   const evaluacionActual = useMemo(() => {
     if (ndepSeleccionado === null) return null;
     const lista = evaluacionesPorOrgano.get(ndepSeleccionado) || [];
@@ -41,7 +47,6 @@ export default function App() {
     const evMes = lista.find(e => e.mes.toUpperCase() === mesSeleccionado.toUpperCase());
     if (evMes) return evMes;
 
-    // Si ese mes específico no tiene registro para ese órgano, tomar el último disponible
     return lista[0] || null;
   }, [ndepSeleccionado, mesSeleccionado, evaluacionesPorOrgano]);
 
@@ -59,65 +64,92 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Función para jalar hacia abajo y actualizar datos en vivo desde Vercel
+  const handlePullRefresh = async () => {
+    try {
+      // Petición con parámetro de tiempo para saltar la caché
+      const res = await fetch(`/src/data/consultasData.json?t=${Date.now()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setDataset(data);
+      }
+    } catch {
+      // Si falla o está offline, mantiene los datos existentes sin interrumpir
+    }
+  };
+
   return (
-    <div className="relative min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-indigo-600 selection:text-white overflow-x-hidden">
-      {/* Background Snippet (ibelick - Grid + Aura glow) */}
-      <div className="fixed inset-0 bg-grid-pattern opacity-30 pointer-events-none -z-10"></div>
+    <PullToRefresh onRefresh={handlePullRefresh}>
+      <div className="relative min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-red-800 selection:text-white overflow-x-hidden">
+        {/* Background Pattern Discreto */}
+        <div className="fixed inset-0 bg-grid-pattern opacity-30 pointer-events-none -z-10"></div>
 
-      {/* ============================================================ */}
-      {/* 1. PANTALLA: PORTADA DE ENTRADA (Réplica Imagen 4)           */}
-      {/* ============================================================ */}
-      {pantalla === 'portada' && (
-        <PortadaLanding
-          totalDependencias={dataset.total_organos || 166}
-          totalDistritos={(dataset.distritos || []).length || 8}
-          mesActivo="OCTUBRE"
-          anio={dataset.anio_predeterminado || 2026}
-          onIngresar={() => {
-            setPantalla('filtros');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-        />
-      )}
-
-      {/* ============================================================ */}
-      {/* 2. PANTALLA: FILTROS GUIADOS (Réplica Imagen 3 y 2)          */}
-      {/* ============================================================ */}
-      {pantalla === 'filtros' && (
-        <main className="flex-1">
-          <FiltrosGuiadosView
-            evaluacionesTotales={dataset.evaluaciones || []}
-            distritos={dataset.distritos || []}
-            meses={mesesDisponibles}
-            anio={dataset.anio_predeterminado || 2026}
-            onConsultar={handleConsultar}
-            onSalir={() => {
-              setPantalla('portada');
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-          />
-        </main>
-      )}
-
-      {/* ============================================================ */}
-      {/* 3. PANTALLA: FICHA DE INDICADORES IROJ (Réplica Imagen 1)    */}
-      {/* ============================================================ */}
-      {pantalla === 'ficha' && evaluacionActual && (
-        <main className="flex-1">
-          <FichaIndicadoresView
-            evaluacionActual={evaluacionActual}
-            mesesDisponibles={mesesDisponibles}
-            mesActivo={mesSeleccionado}
-            anio={dataset.anio_predeterminado || 2026}
-            onCambiarMes={(m) => setMesSeleccionado(m)}
-            onVolverFiltros={() => {
+        {/* Modal de Video Intro con Barra de Progreso sincronizada */}
+        {mostrarVideo && (
+          <VideoIntroModal
+            onComplete={() => {
+              setMostrarVideo(false);
               setPantalla('filtros');
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
-            historialMeses={historialOrgano}
           />
-        </main>
-      )}
-    </div>
+        )}
+
+        {/* ============================================================ */}
+        {/* 1. PANTALLA: PORTADA DE ENTRADA (Réplica Imagen 4)           */}
+        {/* ============================================================ */}
+        {pantalla === 'portada' && (
+          <PortadaLanding
+            totalDependencias={dataset.total_organos || 166}
+            totalDistritos={(dataset.distritos || []).length || 8}
+            mesActivo="OCTUBRE"
+            anio={dataset.anio_predeterminado || 2026}
+            onIngresar={() => {
+              // Iniciar video con barra de progreso al ingresar
+              setMostrarVideo(true);
+            }}
+          />
+        )}
+
+        {/* ============================================================ */}
+        {/* 2. PANTALLA: FILTROS GUIADOS (Réplica Imagen 3 y 2)          */}
+        {/* ============================================================ */}
+        {pantalla === 'filtros' && (
+          <main className="flex-1">
+            <FiltrosGuiadosView
+              evaluacionesTotales={dataset.evaluaciones || []}
+              distritos={dataset.distritos || []}
+              meses={mesesDisponibles}
+              anio={dataset.anio_predeterminado || 2026}
+              onConsultar={handleConsultar}
+              onSalir={() => {
+                setPantalla('portada');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            />
+          </main>
+        )}
+
+        {/* ============================================================ */}
+        {/* 3. PANTALLA: FICHA DE INDICADORES IROJ (Réplica Imagen 1)    */}
+        {/* ============================================================ */}
+        {pantalla === 'ficha' && evaluacionActual && (
+          <main className="flex-1">
+            <FichaIndicadoresView
+              evaluacionActual={evaluacionActual}
+              mesesDisponibles={mesesDisponibles}
+              mesActivo={mesSeleccionado}
+              anio={dataset.anio_predeterminado || 2026}
+              onCambiarMes={(m) => setMesSeleccionado(m)}
+              onVolverFiltros={() => {
+                setPantalla('filtros');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              historialMeses={historialOrgano}
+            />
+          </main>
+        )}
+      </div>
+    </PullToRefresh>
   );
 }
