@@ -4,6 +4,7 @@ import { DatasetIROJ, EvaluacionItem, PantallaType } from './types';
 import { PortadaLanding } from './components/PortadaLanding';
 import { FiltrosGuiadosView } from './components/FiltrosGuiadosView';
 import { FichaIndicadoresView } from './components/FichaIndicadoresView';
+import { LogoAnimadoIntroModal } from './components/LogoAnimadoIntroModal';
 import { PullToRefresh } from './components/PullToRefresh';
 
 export default function App() {
@@ -12,6 +13,9 @@ export default function App() {
 
   // Estado de navegación: 'portada' | 'filtros' | 'ficha'
   const [pantalla, setPantalla] = useState<PantallaType>('portada');
+
+  // Estado para mostrar el Logo Animado en pantalla completa con barra de carga
+  const [mostrarIntro, setMostrarIntro] = useState<boolean>(false);
 
   // Meses disponibles
   const mesesDisponibles = dataset.meses || ['OCTUBRE', 'AGOSTO', 'MAYO', 'MARZO'];
@@ -80,6 +84,17 @@ export default function App() {
         {/* Background Pattern Discreto */}
         <div className="fixed inset-0 bg-grid-pattern opacity-30 pointer-events-none -z-10"></div>
 
+        {/* Intro con Logo Animado IROJ en Pantalla Completa y Barra de Carga */}
+        {mostrarIntro && (
+          <LogoAnimadoIntroModal
+            onComplete={() => {
+              setMostrarIntro(false);
+              setPantalla('filtros');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
+        )}
+
         {/* ============================================================ */}
         {/* 1. PANTALLA: PORTADA DE ENTRADA (Réplica Imagen 4)           */}
         {/* ============================================================ */}
@@ -90,9 +105,8 @@ export default function App() {
             mesActivo="OCTUBRE"
             anio={dataset.anio_predeterminado || 2026}
             onIngresar={() => {
-              // Entrada directa e inmediata al sistema de filtros
-              setPantalla('filtros');
-              window.scrollTo({ top: 0, behavior: 'smooth' });
+              // Activar intro con Logo Animado IROJ a pantalla completa y barra de carga
+              setMostrarIntro(true);
             }}
           />
         )}

@@ -44,14 +44,16 @@ export const PortadaLanding: React.FC<PortadaLandingProps> = ({
             />
           </div>
 
-          {/* Logo 2: Logo Animado IROJ Oficial */}
-          <div className="w-16 h-16 bg-white rounded-2xl p-1 border border-slate-200/90 shadow-[0_4px_16px_rgba(0,0,0,0.06)] flex items-center justify-center shrink-0 overflow-hidden">
+          {/* Logo 2: IROJ / ODANC */}
+          <div className="w-16 h-16 bg-white rounded-2xl p-2 border border-slate-200/90 shadow-[0_4px_16px_rgba(0,0,0,0.06)] flex items-center justify-center shrink-0">
             <img 
-              src="/Logo animado IROJ.gif" 
-              alt="Logo Animado IROJ" 
+              src="/Logo.png" 
+              alt="Logo IROJ" 
+              width={56}
+              height={56}
               className="w-full h-full object-contain"
               onError={(e) => {
-                (e.target as HTMLImageElement).src = '/Logo.png';
+                (e.target as HTMLImageElement).src = '/logo.png';
               }}
             />
           </div>
