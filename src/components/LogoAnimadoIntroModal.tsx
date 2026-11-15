@@ -9,8 +9,9 @@ export const LogoAnimadoIntroModal: React.FC<LogoAnimadoIntroModalProps> = ({ on
   const [progreso, setProgreso] = useState<number>(0);
 
   useEffect(() => {
-    const duracionMs = 2800; // 2.8 segundos de barra de carga
-    const intervaloMs = 30;
+    // Duración exacta de 7 segundos (7000 ms) solicitada
+    const duracionMs = 7000;
+    const intervaloMs = 35;
     const incremento = 100 / (duracionMs / intervaloMs);
 
     const timer = setInterval(() => {
@@ -20,7 +21,7 @@ export const LogoAnimadoIntroModal: React.FC<LogoAnimadoIntroModalProps> = ({ on
           clearInterval(timer);
           setTimeout(() => {
             onComplete();
-          }, 200);
+          }, 250);
           return 100;
         }
         return siguiente;
@@ -31,70 +32,59 @@ export const LogoAnimadoIntroModal: React.FC<LogoAnimadoIntroModalProps> = ({ on
   }, [onComplete]);
 
   return (
-    <div className="fixed inset-0 z-50 bg-gradient-to-b from-black via-slate-950 to-[#1e0708] flex flex-col justify-between overflow-hidden select-none animate-in fade-in duration-300">
-      {/* 1. Header Flotante Superior */}
+    <div className="fixed inset-0 z-50 bg-black flex flex-col justify-between overflow-hidden select-none animate-in fade-in duration-300">
+      {/* 1. Logo Animado IROJ en Toda la Pantalla Vertical (Formato 9:16 nativo 270x480) */}
+      <div className="absolute inset-0 w-full h-full flex items-center justify-center overflow-hidden bg-black z-0">
+        <img
+          src="/Logo animado IROJ.gif"
+          alt="Logo Animado IROJ"
+          className="w-full h-full object-cover sm:object-contain drop-shadow-[0_0_35px_rgba(139,30,35,0.6)]"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = '/Logo.png';
+          }}
+        />
+
+        {/* Gradientes sutiles superior e inferior para legibilidad perfecta */}
+        <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/85 via-black/40 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none" />
+      </div>
+
+      {/* 2. Header Flotante Superior */}
       <header className="relative z-20 px-4 pt-4 safe-top flex items-center justify-between">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-white text-[11px] font-bold shadow-lg">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/65 backdrop-blur-md border border-white/20 text-white text-[11px] font-bold shadow-xl">
           <ShieldCheck className="w-4 h-4 text-amber-400" />
           <span>ODANC LIMA ESTE · IROJ</span>
         </div>
 
-        {/* Botón Omitir para entrar de inmediato si el usuario lo desea */}
+        {/* Botón Omitir para salto voluntario inmediato */}
         <button
           onClick={onComplete}
-          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/30 text-white text-xs font-black tracking-wide active:scale-95 transition-all cursor-pointer shadow-lg"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-black/65 hover:bg-black/80 backdrop-blur-md border border-white/25 text-white text-xs font-black tracking-wide active:scale-95 transition-all cursor-pointer shadow-xl"
         >
           <span>Omitir</span>
           <ArrowRight className="w-3.5 h-3.5" />
         </button>
       </header>
 
-      {/* 2. Centro: Logo Animado IROJ en Toda la Pantalla */}
-      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 my-auto">
-        <div className="relative w-full max-w-sm flex flex-col items-center justify-center">
-          {/* Resplandor de aura detrás del logo animado */}
-          <div className="absolute inset-0 bg-[#8B1E23]/30 blur-3xl rounded-full scale-125 -z-10 animate-pulse pointer-events-none" />
+      {/* Espaciador central transparente (el logo cubre todo el fondo vertical) */}
+      <div className="flex-1 pointer-events-none" />
 
-          {/* Imagen Gif del Logo Animado IROJ */}
-          <div className="w-64 h-64 sm:w-80 sm:h-80 flex items-center justify-center p-2">
-            <img
-              src="/Logo animado IROJ.gif"
-              alt="Logo Animado IROJ"
-              className="w-full h-full object-contain drop-shadow-[0_12px_40px_rgba(139,30,35,0.6)]"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = '/Logo.png';
-              }}
-            />
-          </div>
-
-          {/* Subtítulo institucional centrado */}
-          <div className="text-center space-y-1 mt-2">
-            <h2 className="text-xl sm:text-2xl font-black text-white tracking-wider uppercase drop-shadow-md">
-              SISTEMA IROJ
-            </h2>
-            <p className="text-[11px] font-semibold text-slate-300 tracking-wide uppercase">
-              Corte Superior de Justicia de Lima Este
-            </p>
-          </div>
-        </div>
-      </main>
-
-      {/* 3. Barra de Progreso Inferior Sincronizada */}
-      <footer className="relative z-20 px-6 pb-6 safe-bottom space-y-2.5 max-w-md mx-auto w-full">
-        <div className="flex items-center justify-between text-[11px] font-bold text-white">
-          <span className="flex items-center gap-2 text-amber-300 drop-shadow-sm">
-            <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
-            <span>Cargando indicadores y filtros...</span>
+      {/* 3. Barra de Progreso Inferior Sincronizada a 7 Segundos */}
+      <footer className="relative z-20 px-6 pb-6 safe-bottom space-y-2 max-w-md mx-auto w-full">
+        <div className="flex items-center justify-between text-[11px] font-bold text-white drop-shadow-md">
+          <span className="flex items-center gap-2 text-amber-300">
+            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+            <span>Cargando indicadores de gestión...</span>
           </span>
-          <span className="tabular-nums font-mono text-xs text-amber-200 drop-shadow-sm font-extrabold">
+          <span className="tabular-nums font-mono text-xs text-amber-200 font-extrabold">
             {Math.round(progreso)}%
           </span>
         </div>
 
-        {/* Barra de carga */}
-        <div className="w-full h-2.5 bg-white/20 rounded-full overflow-hidden p-0.5 border border-white/25 backdrop-blur-md shadow-inner">
+        {/* Barra de carga de 7 segundos con resplandor */}
+        <div className="w-full h-2.5 bg-black/60 rounded-full overflow-hidden p-0.5 border border-white/25 backdrop-blur-md shadow-inner">
           <div
-            className="h-full bg-gradient-to-r from-amber-400 via-orange-500 to-[#8B1E23] rounded-full transition-all duration-75 ease-linear shadow-[0_0_14px_rgba(245,158,11,0.9)]"
+            className="h-full bg-gradient-to-r from-amber-400 via-orange-500 to-[#8B1E23] rounded-full transition-all duration-75 ease-linear shadow-[0_0_16px_rgba(245,158,11,0.9)]"
             style={{ width: `${progreso}%` }}
           />
         </div>

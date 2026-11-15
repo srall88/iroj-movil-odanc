@@ -1,4 +1,4 @@
-const CACHE_NAME = 'iroj-mobile-v3';
+const CACHE_NAME = 'iroj-mobile-v5';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -13,12 +13,12 @@ const ASSETS_TO_CACHE = [
 ];
 
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS_TO_CACHE).catch(() => {});
     })
   );
-  self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
@@ -36,12 +36,19 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Estrategia Network-First: Primero consulta Vercel para traer siempre la última versión,
-// y si el teléfono no tiene internet o señal, carga la versión local offline.
+// Estrategia Network-First: Siempre consulta a la red (Vercel) para tener la versión viva.
+// Si no hay conexión o falla la red, carga la versión local offline de caché.
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   if (!event.request.url.startsWith('http')) return;
-  if (event.request.url.includes('.mp4')) return;
+
+  // Consultas de datos o peticiones con timestamp de caché: SIEMPRE directas a red
+  if (event.request.url.includes('?t=') || event.request.url.includes('consultasData.json')) {
+    event.respondWith(
+      fetch(event.request, { cache: 'no-store' }).catch(() => caches.match(event.request))
+    );
+    return;
+  }
 
   event.respondWith(
     fetch(event.request)

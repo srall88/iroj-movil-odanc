@@ -64,17 +64,44 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Función para jalar hacia abajo y actualizar datos en vivo desde Vercel
+  // Función para jalar hacia abajo y actualizar datos y diseño en vivo desde Vercel
   const handlePullRefresh = async () => {
     try {
-      // Petición con parámetro de tiempo para saltar la caché
-      const res = await fetch(`/src/data/consultasData.json?t=${Date.now()}`);
+      // 1. Limpiar Service Worker y caché para que el navegador descargue la versión más reciente
+      if ('caches' in window) {
+        const cacheKeys = await caches.keys();
+        await Promise.all(cacheKeys.map(k => caches.delete(k)));
+      }
+
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const reg of registrations) {
+          await reg.update();
+        }
+      }
+
+      // 2. Descargar el dataset oficial actualizado desde Vercel
+      const cacheBust = Date.now();
+      let res = await fetch(`/consultasData.json?t=${cacheBust}`, { cache: 'no-store' });
+      if (!res.ok) {
+        res = await fetch(`/data/consultasData.json?t=${cacheBust}`, { cache: 'no-store' });
+      }
       if (res.ok) {
         const data = await res.json();
         setDataset(data);
       }
+
+      // 3. Si está corriendo en web / Vercel (http o https), recargar para aplicar nuevos cambios de interfaz
+      if (window.location.protocol.startsWith('http')) {
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
+      }
     } catch {
-      // Si falla o está offline, mantiene los datos existentes sin interrumpir
+      // Si ocurre cualquier error, forzar recarga limpia si estamos conectados
+      if (window.location.protocol.startsWith('http')) {
+        window.location.reload();
+      }
     }
   };
 
